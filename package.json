@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "commander": "^5.1.0",
-    "keywing": "^0.4.0",
+    "keywing": "^0.4.1",
     "tslib": "^2.0.0"
   }
 }

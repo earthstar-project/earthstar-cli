@@ -63,12 +63,13 @@ app
         let kw = new StoreSqlite([ValidatorKw1], workspace, db);
         console.log(JSON.stringify({
             workspace: kw.workspace,
+            num_authors: kw.authors().length,
             num_keys: kw.keys().length,
-            num_items: kw.items({ includeHistory: true }).length
+            num_items_including_history: kw.items({ includeHistory: true }).length
         }, null, 2));
     });
 app
-    .command('summary <db>')
+    .command('pairs <db>')
     .description('Show the keys and values.')
     .action((db : string) => {
         let kw = new StoreSqlite([ValidatorKw1], workspace, db);
@@ -97,11 +98,20 @@ app
     });
 app
     .command('values <db>')
-    .description('List the items in a database')
+    .description('List the values in a database (sorted by their key)')
     .action((db : string) => {
         let kw = new StoreSqlite([ValidatorKw1], workspace, db);
         for (let value of kw.values()) {
             console.log(value);
+        }
+    });
+app
+    .command('authors <db>')
+    .description('List the authors in a database')
+    .action((db : string) => {
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
+        for (let author of kw.authors()) {
+            console.log(author);
         }
     });
 app
