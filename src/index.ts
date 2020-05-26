@@ -13,40 +13,6 @@ import {
 } from 'keywing';
 
 //================================================================================
-// KEYWING SETUP
-
-let workspace = 'test';
-let kw = new StoreMemory([ValidatorKw1], workspace);
-//let keypair : Keypair = keywing.generateKeypair();
-let keypair : Keypair = {
-    public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
-    secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
-}
-let author = addSigilToKey(keypair.public);
-
-kw.set({
-    format: 'kw.1',
-    key: 'wiki/kittens',
-    value: 'Kittens are small mammals.',
-    author: author,
-    authorSecret: keypair.secret,
-});
-kw.set({
-    format: 'kw.1',
-    key: `~${author}/about/name`,
-    value: 'Example Sam',
-    author: author,
-    authorSecret: keypair.secret,
-});
-kw.set({
-    format: 'kw.1',
-    key: `~${author}/about/details`,
-    value: 'I am an example author',
-    author: author,
-    authorSecret: keypair.secret,
-});
-
-//================================================================================
 
 let app = new commander.Command();
 
