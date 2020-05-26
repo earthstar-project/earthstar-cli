@@ -149,22 +149,30 @@ app
         }
         console.log('workspace:', workspace);
         let kw = new StoreSqlite([ValidatorKw1], workspace, db);  // TODO: constructor should check if workspace matches existing db
-
-        console.log(`importing`);
+ 
+        console.log('pulling from ' + url);
         let resp = await fetch(url + '/items');
         let items = await resp.json();
-        let numSuccess = 0;
-        let numFailure = 0;
+        let pullStats = {
+            numIngested: 0,
+            numIgnored: 0,
+            numTotal: items.length,
+        };
         for (let item of items) {
-            if (kw.ingestItem(item)) { numSuccess += 1; }
-            else { numFailure += 1; }
+            if (kw.ingestItem(item)) { pullStats.numIngested += 1; }
+            else { pullStats.numIgnored += 1; }
         }
-        //console.log(items);
-        console.log(`    ${items.length} items obtained`);
-        console.log(`    ${numSuccess} successful items`);
-        console.log(`    ${numFailure} failed items`);
+        console.log(JSON.stringify(pullStats, null, 2));
 
-        // TODO: push to server
+        // push to server
+        console.log('pushing to ' + url);
+        let resp2 = await fetch(url + '/items', {
+            method: 'post',
+            body:    JSON.stringify(kw.items({ includeHistory: true })),
+            headers: { 'Content-Type': 'application/json' },
+        });
+        let pushStats = await resp2.json();
+        console.log(JSON.stringify(pushStats, null, 2));
     });
 
 app.parse(process.argv);
