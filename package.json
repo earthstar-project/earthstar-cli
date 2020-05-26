@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "commander": "^5.1.0",
-    "keywing": "^0.4.1",
+    "keywing": "^0.5.0",
     "node-fetch": "^2.6.0",
     "tslib": "^2.0.0"
   }
