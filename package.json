@@ -3,6 +3,10 @@
   "version": "0.0.2",
   "description": "Command line tool to manage Keywing databases",
   "main": "./build/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/cinnamon-bun/keywing-cli.git"
+  },
   "bin": {
     "keywing": "./build/index.js"
   },
