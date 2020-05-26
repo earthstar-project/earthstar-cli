@@ -1,5 +1,6 @@
 import {readFileSync} from 'fs';
 import commander = require('commander');
+import fetch from 'node-fetch';
 import {
     StoreMemory,
     ValidatorKw1,
@@ -130,6 +131,40 @@ app
         if (!success) {
             console.log('ERROR: set failed');
         }
+    });
+app
+    .command('sync <db> <url>')
+    .description('Sync the database to the url, which should end in "/keywing/<workspace>"')
+    .action(async (db : string, url : string) => {
+        // extract workspace from url
+        if (url.endsWith('/')) { url = url.slice(0,-1); }
+        if (url.indexOf('/keywing/') === -1) {
+            console.log('ERROR: url must contain "/keywing/<workspace>"')
+            return;
+        }
+        let workspace = url.split('/keywing/')[1];
+        if (workspace.length === 0 || workspace.indexOf('/') !== -1) {
+            console.log('ERROR: url must contain "/keywing/<workspace>"')
+            return;
+        }
+        console.log('workspace:', workspace);
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);  // TODO: constructor should check if workspace matches existing db
+
+        console.log(`importing`);
+        let resp = await fetch(url + '/items');
+        let items = await resp.json();
+        let numSuccess = 0;
+        let numFailure = 0;
+        for (let item of items) {
+            if (kw.ingestItem(item)) { numSuccess += 1; }
+            else { numFailure += 1; }
+        }
+        //console.log(items);
+        console.log(`    ${items.length} items obtained`);
+        console.log(`    ${numSuccess} successful items`);
+        console.log(`    ${numFailure} failed items`);
+
+        // TODO: push to server
     });
 
 app.parse(process.argv);
