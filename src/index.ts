@@ -1,15 +1,15 @@
-import * as keywing from 'keywing';
+import {readFileSync} from 'fs';
+import commander = require('commander');
 import {
     StoreMemory,
     ValidatorKw1,
     IStore,
+    addSigilToKey,
     Keypair,
     Item,
     StoreSqlite,
     generateKeypair,
 } from 'keywing';
-import 'fs';
-import { appendFile } from 'fs';
 
 //================================================================================
 // KEYWING SETUP
@@ -21,7 +21,7 @@ let keypair : Keypair = {
     public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
     secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
 }
-let author = keywing.addSigilToKey(keypair.public);
+let author = addSigilToKey(keypair.public);
 
 kw.set({
     format: 'kw.1',
@@ -47,7 +47,6 @@ kw.set({
 
 //================================================================================
 
-import commander = require('commander');
 let app = new commander.Command();
 
 app.version('0.0.1');
@@ -58,12 +57,68 @@ app
         console.log(JSON.stringify(generateKeypair(), null, 2));
     });
 app
+    .command('stats <db>')
+    .description('Report basic info about the database.')
+    .action((db : string) => {
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
+        console.log(JSON.stringify({
+            workspace: kw.workspace,
+            num_keys: kw.keys().length,
+            num_items: kw.items({ includeHistory: true }).length
+        }, null, 2));
+    });
+app
+    .command('summary <db>')
+    .description('Show the keys and values.')
+    .action((db : string) => {
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
+        for (let item of kw.items()) {
+            console.log(item.key);
+            console.log('    ' + item.value);
+        }
+    });
+app
     .command('keys <db>')
     .description('List the keys in a database')
     .action((db : string) => {
-        let kw = new StoreSqlite([ValidatorKw1], db);
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
         for (let key of kw.keys()) {
             console.log(key);
+        }
+    });
+app
+    .command('items <db>')
+    .description('List the items in a database')
+    .action((db : string) => {
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
+        for (let item of kw.items({ includeHistory: true })) {
+            console.log(JSON.stringify(item, null, 2));
+        }
+    });
+app
+    .command('values <db>')
+    .description('List the items in a database')
+    .action((db : string) => {
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
+        for (let value of kw.values()) {
+            console.log(value);
+        }
+    });
+app
+    .command('set <db> <authorFile> <key> <value>')
+    .description('Set a key to a value.  authorFile should be a JSON file.')
+    .action((db, authorFile, key, value) => {
+        let kw = new StoreSqlite([ValidatorKw1], workspace, db);
+        let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
+        let success = kw.set({
+            format: 'kw.1',
+            key,
+            value,
+            author: addSigilToKey(keypair.public),
+            authorSecret: keypair.secret,
+        });
+        if (!success) {
+            console.log('ERROR: set failed');
         }
     });
 
