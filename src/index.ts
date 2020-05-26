@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import {readFileSync} from 'fs';
 import commander = require('commander');
 import fetch, { FetchError } from 'node-fetch';
