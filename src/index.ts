@@ -1,6 +1,6 @@
 import {readFileSync} from 'fs';
 import commander = require('commander');
-import fetch from 'node-fetch';
+import fetch, { FetchError } from 'node-fetch';
 import {
     StoreMemory,
     ValidatorKw1,
@@ -11,6 +11,71 @@ import {
     StoreSqlite,
     generateKeypair,
 } from 'keywing';
+
+//================================================================================
+// HELPERS
+
+let syncLocalAndHttp = async (db : string, url : string) => {
+    let kw = new StoreSqlite({
+        mode: 'open',
+        workspace: null,
+        validators: [ValidatorKw1],
+        filename: db,
+    });
+    console.log('existing database workspace:', kw.workspace);
+
+    if (!url.endsWith('/')) { url = url + '/'; }
+    if (!url.endsWith('/keywing/')) {
+        console.error('ERROR: url is expected to end with "/keywing/"')
+        return;
+    }
+    let urlWithWorkspace = url + kw.workspace;
+
+    // pull from server
+    // this can 404 the first time, because the server only creates workspaces
+    // when we push them
+    console.log('pulling from ' + urlWithWorkspace);
+    let resp : any;
+    try {
+        resp = await fetch(urlWithWorkspace + '/items');
+    } catch (e) {
+        console.error('ERROR: could not connect to server');
+        console.error(e.toString());
+        return;
+    }
+    if (resp.status === 404) {
+        console.log('    server 404: server does not know about this workspace yet');
+    } else {
+        let items = await resp.json();
+        let pullStats = {
+            numIngested: 0,
+            numIgnored: 0,
+            numTotal: items.length,
+        };
+        for (let item of items) {
+            if (kw.ingestItem(item)) { pullStats.numIngested += 1; }
+            else { pullStats.numIgnored += 1; }
+        }
+        console.log(JSON.stringify(pullStats, null, 2));
+    }
+
+    // push to server
+    console.log('pushing to ' + urlWithWorkspace);
+    let resp2 : any;
+    try {
+        resp2 = await fetch(urlWithWorkspace + '/items', {
+            method: 'post',
+            body:    JSON.stringify(kw.items({ includeHistory: true })),
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } catch (e) {
+        console.error('ERROR: could not connect to server');
+        console.error(e.toString());
+        return;
+    }
+    let pushStats = await resp2.json();
+    console.log(JSON.stringify(pushStats, null, 2));
+};
 
 //================================================================================
 
@@ -141,58 +206,31 @@ app
             authorSecret: keypair.secret,
         });
         if (!success) {
-            console.log('ERROR: set failed');
+            console.error('ERROR: set failed');
         }
     });
 app
-    .command('sync <db> <url>')
-    .description('Sync the database to the url, which should end in "/keywing/"')
-    .action(async (db : string, url : string) => {
-        let kw = new StoreSqlite({
-            mode: 'open',
-            workspace: null,
-            validators: [ValidatorKw1],
-            filename: db,
-        });
-        console.log('existing database workspace:', kw.workspace);
-
-        if (!url.endsWith('/')) { url = url + '/'; }
-        if (!url.endsWith('/keywing/')) {
-            console.log('ERROR: url is expected to end with "/keywing/"')
-            return;
+    .command('sync <dbOrUrl1> <dbOrUrl2>')
+    .description('Sync between two local files and/or remote servers.  Urls should end in "/keywing/"')
+    .action(async (dbOrUrl1 : string, dbOrUrl2 : string) => {
+        let isUrl = (s : string) => s.startsWith('http://') || s.startsWith('https://');
+        if (isUrl(dbOrUrl1) && !isUrl(dbOrUrl2)) {
+            let url = dbOrUrl1;
+            let db = dbOrUrl2;
+            await syncLocalAndHttp(db, url);
+        } else if (!isUrl(dbOrUrl1) && isUrl(dbOrUrl2)) {
+            let db = dbOrUrl1;
+            let url = dbOrUrl2;
+            await syncLocalAndHttp(db, url);
+        } else if (!isUrl(dbOrUrl1) && !isUrl(dbOrUrl2)) {
+            let db1 = dbOrUrl1;
+            let db2 = dbOrUrl2;
+            console.error('NOT IMPLEMENTED YET: sync between two local files');
+        } else if (isUrl(dbOrUrl1) && isUrl(dbOrUrl2)) {
+            let url1 = dbOrUrl1;
+            let url2 = dbOrUrl2;
+            console.error('NOT IMPLEMENTED YET: sync between two urls');
         }
-        let urlWithWorkspace = url + kw.workspace;
- 
-        // pull from server
-        // this can 404 the first time, because the server only creates workspaces
-        // when we push them
-        console.log('pulling from ' + urlWithWorkspace);
-        let resp = await fetch(urlWithWorkspace + '/items');
-        if (resp.status === 404) {
-            console.log('    server 404: server does not know about this workspace yet');
-        } else {
-            let items = await resp.json();
-            let pullStats = {
-                numIngested: 0,
-                numIgnored: 0,
-                numTotal: items.length,
-            };
-            for (let item of items) {
-                if (kw.ingestItem(item)) { pullStats.numIngested += 1; }
-                else { pullStats.numIgnored += 1; }
-            }
-            console.log(JSON.stringify(pullStats, null, 2));
-        }
-
-        // push to server
-        console.log('pushing to ' + urlWithWorkspace);
-        let resp2 = await fetch(urlWithWorkspace + '/items', {
-            method: 'post',
-            body:    JSON.stringify(kw.items({ includeHistory: true })),
-            headers: { 'Content-Type': 'application/json' },
-        });
-        let pushStats = await resp2.json();
-        console.log(JSON.stringify(pushStats, null, 2));
     });
 
 app.parse(process.argv);
