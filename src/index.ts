@@ -2,7 +2,7 @@
 
 import {readFileSync} from 'fs';
 import commander = require('commander');
-import fetch, { FetchError } from 'node-fetch';
+import fetch from 'node-fetch';
 import {
     StoreMemory,
     ValidatorKw1,
@@ -27,8 +27,8 @@ let syncLocalAndHttp = async (db : string, url : string) => {
     console.log('existing database workspace:', kw.workspace);
 
     if (!url.endsWith('/')) { url = url + '/'; }
-    if (!url.endsWith('/keywing/')) {
-        console.error('ERROR: url is expected to end with "/keywing/"')
+    if (!url.endsWith('/earthstar/')) {
+        console.error('ERROR: url is expected to end with "/earthstar/"')
         return;
     }
     let urlWithWorkspace = url + kw.workspace;
@@ -213,7 +213,7 @@ app
     });
 app
     .command('sync <dbOrUrl1> <dbOrUrl2>')
-    .description('Sync between two local files and/or remote servers.  Urls should end in "/keywing/"')
+    .description('Sync between two local files and/or remote servers.  Urls should end in "/earthstar/"')
     .action(async (dbOrUrl1 : string, dbOrUrl2 : string) => {
         let isUrl = (s : string) => s.startsWith('http://') || s.startsWith('https://');
         if (isUrl(dbOrUrl1) && !isUrl(dbOrUrl2)) {
