@@ -4,9 +4,7 @@ import {readFileSync} from 'fs';
 import commander = require('commander');
 import fetch from 'node-fetch';
 import {
-    StoreMemory,
-    ValidatorKw1,
-    IStore,
+    ValidatorEs1,
     addSigilToKey,
     StoreSqlite,
     generateKeypair,
@@ -19,7 +17,7 @@ let syncLocalAndHttp = async (db : string, url : string) => {
     let es = new StoreSqlite({
         mode: 'open',
         workspace: null,
-        validators: [ValidatorKw1],
+        validators: [ValidatorEs1],
         filename: db,
     });
     console.log('existing database workspace:', es.workspace);
@@ -101,7 +99,7 @@ app
         let es = new StoreSqlite({
             mode: 'create',
             workspace: workspace,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
     });
@@ -112,7 +110,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         console.log(JSON.stringify({
@@ -129,7 +127,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         for (let item of es.items()) {
@@ -144,7 +142,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         for (let key of es.keys()) {
@@ -158,7 +156,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         for (let item of es.items({ includeHistory: true })) {
@@ -172,7 +170,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         for (let value of es.values()) {
@@ -186,7 +184,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         for (let author of es.authors()) {
@@ -200,12 +198,12 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorKw1],
+            validators: [ValidatorEs1],
             filename: db,
         });
         let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
         let success = es.set({
-            format: 'kw.1',
+            format: 'es.1',
             key,
             value,
             author: addSigilToKey(keypair.public),
@@ -233,13 +231,13 @@ app
             let es1 = new StoreSqlite({
                 mode: 'open',
                 workspace: null,
-                validators: [ValidatorKw1],
+                validators: [ValidatorEs1],
                 filename: dbOrUrl1,
             });
             let es2 = new StoreSqlite({
                 mode: 'open',
                 workspace: null,
-                validators: [ValidatorKw1],
+                validators: [ValidatorEs1],
                 filename: dbOrUrl2,
             });
             if (es1.workspace !== es2.workspace) {
