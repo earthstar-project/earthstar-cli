@@ -231,10 +231,27 @@ app
             let url = dbOrUrl2;
             await syncLocalAndHttp(db, url);
         } else if (!isUrl(dbOrUrl1) && !isUrl(dbOrUrl2)) {
-            let db1 = dbOrUrl1;
-            let db2 = dbOrUrl2;
-            console.error('NOT IMPLEMENTED YET: sync between two local files');
+            // two local files
+            let kw1 = new StoreSqlite({
+                mode: 'open',
+                workspace: null,
+                validators: [ValidatorKw1],
+                filename: dbOrUrl1,
+            });
+            let kw2 = new StoreSqlite({
+                mode: 'open',
+                workspace: null,
+                validators: [ValidatorKw1],
+                filename: dbOrUrl2,
+            });
+            if (kw1.workspace !== kw2.workspace) {
+                console.error(`Can't sync because workspaces don't match: ${kw1.workspace} and ${kw2.workspace}`);
+                process.exit(1);
+            }
+            let syncResults = kw1.sync(kw2);
+            console.log(JSON.stringify(syncResults, null, 2));
         } else if (isUrl(dbOrUrl1) && isUrl(dbOrUrl2)) {
+            // two urls
             let url1 = dbOrUrl1;
             let url2 = dbOrUrl2;
             console.error('NOT IMPLEMENTED YET: sync between two urls');
