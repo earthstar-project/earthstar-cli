@@ -8,8 +8,6 @@ import {
     ValidatorKw1,
     IStore,
     addSigilToKey,
-    Keypair,
-    Item,
     StoreSqlite,
     generateKeypair,
 } from 'earthstar';
@@ -18,20 +16,20 @@ import {
 // HELPERS
 
 let syncLocalAndHttp = async (db : string, url : string) => {
-    let kw = new StoreSqlite({
+    let es = new StoreSqlite({
         mode: 'open',
         workspace: null,
         validators: [ValidatorKw1],
         filename: db,
     });
-    console.log('existing database workspace:', kw.workspace);
+    console.log('existing database workspace:', es.workspace);
 
     if (!url.endsWith('/')) { url = url + '/'; }
     if (!url.endsWith('/earthstar/')) {
         console.error('ERROR: url is expected to end with "/earthstar/"')
         return;
     }
-    let urlWithWorkspace = url + kw.workspace;
+    let urlWithWorkspace = url + es.workspace;
 
     // pull from server
     // this can 404 the first time, because the server only creates workspaces
@@ -55,7 +53,7 @@ let syncLocalAndHttp = async (db : string, url : string) => {
             numTotal: items.length,
         };
         for (let item of items) {
-            if (kw.ingestItem(item)) { pullStats.numIngested += 1; }
+            if (es.ingestItem(item)) { pullStats.numIngested += 1; }
             else { pullStats.numIgnored += 1; }
         }
         console.log(JSON.stringify(pullStats, null, 2));
@@ -67,7 +65,7 @@ let syncLocalAndHttp = async (db : string, url : string) => {
     try {
         resp2 = await fetch(urlWithWorkspace + '/items', {
             method: 'post',
-            body:    JSON.stringify(kw.items({ includeHistory: true })),
+            body:    JSON.stringify(es.items({ includeHistory: true })),
             headers: { 'Content-Type': 'application/json' },
         });
     } catch (e) {
@@ -100,7 +98,7 @@ app
     .command('create <db> <workspace>')
     .description('Create a new database')
     .action((db, workspace) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'create',
             workspace: workspace,
             validators: [ValidatorKw1],
@@ -111,30 +109,30 @@ app
     .command('info <db>')
     .description('Report basic info about the database')
     .action((db : string) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
         console.log(JSON.stringify({
-            workspace: kw.workspace,
-            num_authors: kw.authors().length,
-            num_keys: kw.keys().length,
-            num_items_including_history: kw.items({ includeHistory: true }).length
+            workspace: es.workspace,
+            num_authors: es.authors().length,
+            num_keys: es.keys().length,
+            num_items_including_history: es.items({ includeHistory: true }).length
         }, null, 2));
     });
 app
     .command('pairs <db>')
     .description('Show keys and values')
     .action((db : string) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
-        for (let item of kw.items()) {
+        for (let item of es.items()) {
             console.log(item.key);
             console.log('    ' + item.value);
         }
@@ -143,13 +141,13 @@ app
     .command('keys <db>')
     .description('List the keys')
     .action((db : string) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
-        for (let key of kw.keys()) {
+        for (let key of es.keys()) {
             console.log(key);
         }
     });
@@ -157,13 +155,13 @@ app
     .command('items <db>')
     .description('List the items in a database including history items')
     .action((db : string) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
-        for (let item of kw.items({ includeHistory: true })) {
+        for (let item of es.items({ includeHistory: true })) {
             console.log(JSON.stringify(item, null, 2));
         }
     });
@@ -171,13 +169,13 @@ app
     .command('values <db>')
     .description('List the values in a database (sorted by their key)')
     .action((db : string) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
-        for (let value of kw.values()) {
+        for (let value of es.values()) {
             console.log(value);
         }
     });
@@ -185,13 +183,13 @@ app
     .command('authors <db>')
     .description('List the authors in a database')
     .action((db : string) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
-        for (let author of kw.authors()) {
+        for (let author of es.authors()) {
             console.log(author);
         }
     });
@@ -199,14 +197,14 @@ app
     .command('set <db> <authorFile> <key> <value>')
     .description('Set a key to a value.  authorFile should be a JSON file.')
     .action((db, authorFile, key, value) => {
-        let kw = new StoreSqlite({
+        let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
             validators: [ValidatorKw1],
             filename: db,
         });
         let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
-        let success = kw.set({
+        let success = es.set({
             format: 'kw.1',
             key,
             value,
@@ -232,23 +230,23 @@ app
             await syncLocalAndHttp(db, url);
         } else if (!isUrl(dbOrUrl1) && !isUrl(dbOrUrl2)) {
             // two local files
-            let kw1 = new StoreSqlite({
+            let es1 = new StoreSqlite({
                 mode: 'open',
                 workspace: null,
                 validators: [ValidatorKw1],
                 filename: dbOrUrl1,
             });
-            let kw2 = new StoreSqlite({
+            let es2 = new StoreSqlite({
                 mode: 'open',
                 workspace: null,
                 validators: [ValidatorKw1],
                 filename: dbOrUrl2,
             });
-            if (kw1.workspace !== kw2.workspace) {
-                console.error(`Can't sync because workspaces don't match: ${kw1.workspace} and ${kw2.workspace}`);
+            if (es1.workspace !== es2.workspace) {
+                console.error(`Can't sync because workspaces don't match: ${es1.workspace} and ${es2.workspace}`);
                 process.exit(1);
             }
-            let syncResults = kw1.sync(kw2);
+            let syncResults = es1.sync(es2);
             console.log(JSON.stringify(syncResults, null, 2));
         } else if (isUrl(dbOrUrl1) && isUrl(dbOrUrl2)) {
             // two urls
