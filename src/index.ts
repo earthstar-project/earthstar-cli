@@ -12,7 +12,7 @@ import {
     Item,
     StoreSqlite,
     generateKeypair,
-} from 'keywing';
+} from 'earthstar';
 
 //================================================================================
 // HELPERS

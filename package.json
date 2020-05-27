@@ -1,14 +1,14 @@
 {
-  "name": "keywing-cli",
+  "name": "earthstar-cli",
   "version": "0.0.3",
-  "description": "Command line tool to manage Keywing databases",
+  "description": "Command line tool to manage Earthstar sqlite databases",
   "main": "./build/index.js",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/cinnamon-bun/keywing-cli.git"
+    "url": "git+ssh://git@github.com/cinnamon-bun/earthstar-cli.git"
   },
   "bin": {
-    "keywing": "./build/index.js"
+    "earthstar": "./build/index.js"
   },
   "scripts": {
     "clean": "rm -rf build/*",
@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "commander": "^5.1.0",
-    "keywing": "^0.5.0",
+    "earthstar": "^0.6.0",
     "node-fetch": "^2.6.0",
     "tslib": "^2.0.0"
   }

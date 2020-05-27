@@ -1,6 +1,6 @@
-# Keywing command-line tool
+# Earthstar command-line tool
 
-Lets you modify and sync sqlite files holding [Keywing](https://github.com/cinnamon-bun/keywing) databases.
+Lets you modify and sync sqlite files holding [Earthstar](https://github.com/cinnamon-bun/earthstar) databases.
 
 ```
 Usage: index [options] [command]
@@ -20,6 +20,6 @@ Commands:
   authors <db>                         List the authors in a database
   set <db> <authorFile> <key> <value>  Set a key to a value.  authorFile should be a JSON file.
   sync <dbOrUrl1> <dbOrUrl2>           Sync between two local files and/or remote servers.
-                                       Urls should end in "/keywing/"
+                                       Urls should end in "/earthstar/"
   help [command]                       display help for command
 ```
