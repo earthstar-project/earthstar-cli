@@ -75,8 +75,14 @@ let syncLocalAndHttp = async (db : string, url : string) => {
         console.error(e.toString());
         return;
     }
-    let pushStats = await resp2.json();
-    console.log(JSON.stringify(pushStats, null, 2));
+    if (resp2.status === 404) {
+        console.log('    server 404: server is not accepting new workspaces');
+    } else if (resp2.status === 403) {
+        console.log('    server 403: server is in readonly mode');
+    } else {
+        let pushStats = await resp2.json();
+        console.log(JSON.stringify(pushStats, null, 2));
+    }
 };
 
 //================================================================================
