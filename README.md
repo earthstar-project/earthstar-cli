@@ -1,12 +1,59 @@
 # Earthstar command-line tool
 
-Lets you modify and sync sqlite files holding [Earthstar](https://github.com/cinnamon-bun/earthstar) databases.
+Lets you inspect, modify and sync sqlite files holding [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces.  Each sqlite file holds exactly one workspace.
+
+## Examples
+Make a new file that will hold the `demo` workspace.  You generally have to do this step before any of the other commands, such as syncing.
+```
+earthstar create demo.sqlite demo
+```
+
+Create an author keypair
+```
+earthstar generate-author > author-keypair.json
+```
+
+Set a key
+```
+earthstar set demo.sqlite author-keypair.json key1 value1
+```
+
+See what's in a workspace
+```
+earthstar pairs demo.sqlite
+----
+key1
+    value1
+```
+
+Sync two sqlite files with each other.  Both must already exist and have the same workspace.
+```
+earthstar create demo2.sqlite demo  # make another one to sync with
+earthstar sync demo.sqlite demo2.sqlite
+```
+
+Sync with an earthstar-pub.
+```
+earthstar sync demo.sqlite https://example.com/earthstar/
+```
+
+## Usage
+
+Arguments:
+* `<db>`: filename to an sqlite file
+* `<workspace>`: any string
+* `<authorFile>`: a JSON file in the format printed by `generate-author`
+* `<key>`: any string
+* `<value>`: any string
+* `<url>`: HTTP address of an earthstar pub.  Must end in `/earthstar/`.
 
 ```
-Usage: index [options] [command]
+Usage: earthstar [options] [command]
 
 Options:
-  -V, --version                        output the version number
+  --unsigned                           Allow/create messages of type "unsigned.1" which do not
+                                       have signatures.  This is insecure.  Only use it for
+                                       testing.
   -h, --help                           display help for command
 
 Commands:

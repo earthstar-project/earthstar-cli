@@ -5,9 +5,11 @@ import commander = require('commander');
 import fetch from 'node-fetch';
 import {
     ValidatorEs1,
+    ValidatorUnsigned1,
     addSigilToKey,
     StoreSqlite,
     generateKeypair,
+    IValidator,
 } from 'earthstar';
 
 //================================================================================
@@ -83,9 +85,20 @@ let syncLocalAndHttp = async (db : string, url : string) => {
 
 //================================================================================
 
+let getValidators = (insecure : boolean | undefined) => {
+    let vals : IValidator[] = [ValidatorEs1];
+    if (insecure === true) {
+        vals.push(ValidatorUnsigned1);
+        console.log('WARNING: Allowing unsigned items.  This is insecure.');
+    }
+    return vals;
+}
+
 let app = new commander.Command();
 
-app.version('0.0.1');
+app
+    .name('earthstar')
+    .option('--unsigned', 'Allow/create messages of type "unsigned.1" which do not have signatures.  This is insecure.  Only use it for testing.');
 app
     .command('generate-author')
     .description('Generate and print a new author keypair')
@@ -99,7 +112,7 @@ app
         let es = new StoreSqlite({
             mode: 'create',
             workspace: workspace,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
     });
@@ -110,7 +123,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         console.log(JSON.stringify({
@@ -127,7 +140,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         for (let item of es.items()) {
@@ -142,7 +155,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         for (let key of es.keys()) {
@@ -156,7 +169,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         for (let item of es.items({ includeHistory: true })) {
@@ -170,7 +183,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         for (let value of es.values()) {
@@ -184,7 +197,7 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         for (let author of es.authors()) {
@@ -198,12 +211,12 @@ app
         let es = new StoreSqlite({
             mode: 'open',
             workspace: null,
-            validators: [ValidatorEs1],
+            validators: getValidators(app.unsigned),
             filename: db,
         });
         let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
         let success = es.set({
-            format: 'es.1',
+            format: app.unsigned === true ? 'unsigned.1' : 'es.1',
             key,
             value,
             author: addSigilToKey(keypair.public),
@@ -231,13 +244,13 @@ app
             let es1 = new StoreSqlite({
                 mode: 'open',
                 workspace: null,
-                validators: [ValidatorEs1],
+                validators: getValidators(app.unsigned),
                 filename: dbOrUrl1,
             });
             let es2 = new StoreSqlite({
                 mode: 'open',
                 workspace: null,
-                validators: [ValidatorEs1],
+                validators: getValidators(app.unsigned),
                 filename: dbOrUrl2,
             });
             if (es1.workspace !== es2.workspace) {
