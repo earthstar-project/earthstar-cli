@@ -5,7 +5,7 @@ Lets you inspect, modify and sync sqlite files holding [Earthstar](https://githu
 ## Examples
 Make a new file that will hold the `demo` workspace.  You generally have to do this step before any of the other commands, such as syncing.
 ```
-earthstar create demo.sqlite demo
+earthstar create-database demo.sqlite demo
 ```
 
 Create an author keypair
@@ -51,22 +51,26 @@ Arguments:
 Usage: earthstar [options] [command]
 
 Options:
-  --unsigned                           Allow/create messages of type "unsigned.1" which do not
-                                       have signatures.  This is insecure.  Only use it for
-                                       testing.
+  --unsigned                           Allow/create messages of type "unsigned.1" which
+                                       do not have signatures.  This is insecure.  Only
+                                       use it for testing.
   -h, --help                           display help for command
 
 Commands:
   generate-author                      Generate and print a new author keypair
-  create <db> <workspace>              Create a new database
+  create-database <db> <workspace>     Create a new sqlite database to hold a given
+                                       workspace
   info <db>                            Report basic info about the database
   pairs <db>                           Show keys and values
   keys <db>                            List the keys
-  items <db>                           List the items in a database including history items
-  values <db>                          List the values in a database (sorted by their key)
+  items <db>                           List the items in a database including history
+                                       items
+  values <db>                          List the values in a database (sorted by their
+                                       key)
   authors <db>                         List the authors in a database
-  set <db> <authorFile> <key> <value>  Set a key to a value.  authorFile should be a JSON file.
-  sync <dbOrUrl1> <dbOrUrl2>           Sync between two local files and/or remote servers.
-                                       Urls should end in "/earthstar/"
+  set <db> <authorFile> <key> <value>  Set a key to a value.  authorFile should be a
+                                       JSON file.
+  sync <dbOrUrl1> <dbOrUrl2>           Sync between two local files and/or remote
+                                       servers.  Urls should end in "/earthstar/"
   help [command]                       display help for command
 ```

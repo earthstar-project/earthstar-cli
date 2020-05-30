@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 
-import {readFileSync} from 'fs';
+import { readFileSync } from 'fs';
 import commander = require('commander');
 import fetch from 'node-fetch';
 import {
+    Crypto,
+    IValidator,
+    StoreSqlite,
     ValidatorEs1,
     ValidatorUnsigned1,
-    addSigilToKey,
-    StoreSqlite,
-    generateKeypair,
-    IValidator,
 } from 'earthstar';
 
 //================================================================================
@@ -103,11 +102,11 @@ app
     .command('generate-author')
     .description('Generate and print a new author keypair')
     .action(() => {
-        console.log(JSON.stringify(generateKeypair(), null, 2));
+        console.log(JSON.stringify(Crypto.generateKeypair(), null, 2));
     });
 app
-    .command('create <db> <workspace>')
-    .description('Create a new database')
+    .command('create-database <db> <workspace>')
+    .description('Create a new sqlite database to hold a given workspace')
     .action((db, workspace) => {
         let es = new StoreSqlite({
             mode: 'create',
@@ -215,12 +214,10 @@ app
             filename: db,
         });
         let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
-        let success = es.set({
+        let success = es.set(keypair, {
             format: app.unsigned === true ? 'unsigned.1' : 'es.1',
             key,
             value,
-            author: addSigilToKey(keypair.public),
-            authorSecret: keypair.secret,
         });
         if (!success) {
             console.error('ERROR: set failed');
