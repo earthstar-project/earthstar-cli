@@ -150,7 +150,7 @@ app
         } else if (!isUrl(dbOrUrl1) && !isUrl(dbOrUrl2)) {
             // two local files
             let storage1 = obtainStorage(dbOrUrl1);
-            let storage2 = obtainStorage(dbOrUrl1);
+            let storage2 = obtainStorage(dbOrUrl2);
             if (storage1.workspace !== storage2.workspace) {
                 console.error(`Can't sync because workspaces don't match: ${storage1.workspace} and ${storage2.workspace}`);
                 process.exit(1);
