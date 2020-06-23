@@ -1,48 +1,57 @@
 # Earthstar command-line tool
 
-Lets you inspect, modify and sync sqlite files holding [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces.  Each sqlite file holds exactly one workspace.
+Lets you inspect, modify and sync [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces as sqlite files on your local disk.  Each sqlite file holds exactly one workspace.
+
+You can learn more about workspaces and other Earthstar concepts in the [docs](https://github.com/cinnamon-bun/earthstar/blob/master/docs/vocabulary.md).
+
+## Install
+
+```sh
+npm install --global earthstar-cli
+```
+
+Note that the command this installs is called just `earthstar`, not `earthstar-cli`.
 
 ## Examples
 
-Let's make a new workspace called `//demo.123456`.  Workspaces have this format:
+Let's make a new **workspace** called `//demo.123456`.  Workspaces have this format:
 
 ```
-"//" WORKSPACE_NAME "." RANDOM_CHARS
+WORKSPACE_ADDRESS: "//" WORKSPACE_NAME "." RANDOM_CHARS
 
 WORKSPACE_NAME: 1 to 15 lower-case letters
-RANDOM_CHARS: 1 to 44 letters or numbers
+RANDOM_CHARS: 1 to 44 upper- or lower-case letters or numbers
 ```
 
-Make a new database file that will hold the `//demo.123456` workspace.  You generally have to do this step before any of the other commands, such as syncing.
-```
+Make a new database file that will hold the `//demo.123456` workspace.  All the other commands expect a database to already exist, so you have to create one first.
+```sh
 earthstar create-database demo.sqlite //demo.123456
 ```
 
-Create an author identity for "suzy".  The name has to be 4 lowercase letters.
+Create an **author** identity starting with `suzy`.  The name must be 4 lowercase letters.  We'll save it in a JSON file.
 ```
 earthstar generate-author suzy > author-keypair.json
+
 cat author-keypair.json
-----
+---
   {
     "address": "@suzy.BvWCCQJfGVNQ1q1VFATBvAwfX4N8bQXWXxvFsViLa85P",
     "secret": "3P1BisPyTs2EGMSHpXKHLbeoZewrYePfETbf19gi8E6z"
   }
 ```
 
-Save a document (a string) at a path
+Save a **document** at a **path**, using the author identity we just created.
 ```
 earthstar set demo.sqlite author-keypair.json /test/path "Test value"
 ```
 
-See the documents in a workspace
+Print out the documents in a workspace
 ```
 earthstar pairs demo.sqlite
 ----
 /test/path
     Test value
-```
 
-```
 earthstar documents demo.sqlite
 ----
   {
@@ -54,19 +63,26 @@ earthstar documents demo.sqlite
     "timestamp": 1592936759163000,
     "signature": (... redacted for length ...)
   }
-----
 ```
 
 Sync two sqlite files with each other.  Both must already exist and have the same workspace.
-```
-earthstar create-workspace demo2.sqlite //demo.123456  # make another one to sync with
+```sh
+# make another database to sync with
+earthstar create-workspace demo2.sqlite //demo.123456
+
+# sync
 earthstar sync demo.sqlite demo2.sqlite
+
+# print the contents of the second one to verify it worked
+earthstar pairs demo2.sqlite
 ```
 
-Sync with an [earthstar-pub](https://github.com/cinnamon-bun/earthstar-pub) server
+Sync with an [earthstar-pub](https://github.com/cinnamon-bun/earthstar-pub) server on the internet.  (This example server might take a moment to start up if it hasn't been used for a while)
 ```
 earthstar sync demo.sqlite https://cinnamon-bun-earthstar-pub3.glitch.me
 ```
+
+Now visit https://cinnamon-bun-earthstar-pub3.glitch.me/workspace/demo.123456 to see your data on the server.  (Pub servers exist to help with syncing, not to publish things to the internet, but for this demo you can view the content through the web.)
 
 ## Usage
 
