@@ -3,38 +3,69 @@
 Lets you inspect, modify and sync sqlite files holding [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces.  Each sqlite file holds exactly one workspace.
 
 ## Examples
-Make a new file that will hold the `demo` workspace.  You generally have to do this step before any of the other commands, such as syncing.
+
+Let's make a new workspace called `//demo.123456`.  Workspaces have this format:
+
 ```
-earthstar create-database demo.sqlite demo
+"//" WORKSPACE_NAME "." RANDOM_CHARS
+
+WORKSPACE_NAME: 1 to 15 lower-case letters
+RANDOM_CHARS: 1 to 44 letters or numbers
 ```
 
-Create an author keypair
+Make a new database file that will hold the `//demo.123456` workspace.  You generally have to do this step before any of the other commands, such as syncing.
+```
+earthstar create-database demo.sqlite //demo.123456
+```
+
+Create an author identity for "suzy".  The name has to be 4 lowercase letters.
 ```
 earthstar generate-author suzy > author-keypair.json
+cat author-keypair.json
+----
+  {
+    "address": "@suzy.BvWCCQJfGVNQ1q1VFATBvAwfX4N8bQXWXxvFsViLa85P",
+    "secret": "3P1BisPyTs2EGMSHpXKHLbeoZewrYePfETbf19gi8E6z"
+  }
 ```
 
-Set a path
+Save a document (a string) at a path
 ```
-earthstar set demo.sqlite author-keypair.json path1 value1
+earthstar set demo.sqlite author-keypair.json /test/path "Test value"
 ```
 
-See what's in a workspace
+See the documents in a workspace
 ```
 earthstar pairs demo.sqlite
 ----
-key1
-    value1
+/test/path
+    Test value
+```
+
+```
+earthstar documents demo.sqlite
+----
+  {
+    "format": "es.2",
+    "workspace": "//demo.123456",
+    "path": "/test/path",
+    "value": "Test value",
+    "author": "@suzy.BvWCCQJfGVNQ1q1VFATBvAwfX4N8bQXWXxvFsViLa85P",
+    "timestamp": 1592936759163000,
+    "signature": (... redacted for length ...)
+  }
+----
 ```
 
 Sync two sqlite files with each other.  Both must already exist and have the same workspace.
 ```
-earthstar create demo2.sqlite demo  # make another one to sync with
+earthstar create-workspace demo2.sqlite //demo.123456  # make another one to sync with
 earthstar sync demo.sqlite demo2.sqlite
 ```
 
-Sync with an earthstar-pub.
+Sync with an [earthstar-pub](https://github.com/cinnamon-bun/earthstar-pub) server
 ```
-earthstar sync demo.sqlite https://example.com
+earthstar sync demo.sqlite https://cinnamon-bun-earthstar-pub3.glitch.me
 ```
 
 ## Usage
@@ -42,7 +73,7 @@ earthstar sync demo.sqlite https://example.com
 Arguments:
 * `<dbFilename>`: filename to an sqlite file
 * `<workspace>`: a workspace address like `//gardening.ac9eEIhf9332He0afwf`
-* `<authorFile>`: a JSON file in the format printed by `generate-author`
+* `<authorFile>`: a JSON file in the format printed by `generate-author` containing an author's private key
 * `<path>`: an Earthstar path, starting with a slash
 * `<value>`: any string
 * `<url>`: HTTP address of an earthstar pub.
