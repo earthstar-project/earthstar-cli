@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import commander = require('commander');
 
 import {
     StorageSqlite,
-    ValidatorEs2,
+    ValidatorEs3,
     generateAuthorKeypair,
     syncLocalAndHttp,
     IStorage,
+    parseWorkspaceAddress,
 } from 'earthstar';
 
 //================================================================================
 // HELPERS
 
-let VALIDATORS = [ValidatorEs2];
-let FORMAT = 'es.2';
+let VALIDATORS = [ValidatorEs3];
+let FORMAT = 'es.3';
 
 let obtainStorage = (db : string) : StorageSqlite =>
     new StorageSqlite({
@@ -35,7 +36,7 @@ app
     .command('generate-author <shortname>')
     .description('Generate and print a new author keypair with the given 4-letter shortname')
     .action((shortname) => {
-        // TODO: this check should happen in earthstar core, in generateAuthorKeypair
+        // TODO: remove this once earthstar 2.0.1 is published - it checks for you
         if (shortname.length !== 4) {
             console.warn('ERROR: shortname must be exactly 4 lowercase letters.');
             process.exit(1);
@@ -43,16 +44,26 @@ app
         console.log(JSON.stringify(generateAuthorKeypair(shortname), null, 2));
     });
 app
-    .command('create-workspace <dbFilename> <workspace>')
+    .command('create-workspace <dbFilename> <workspaceAddress>')
     .description('Create a new sqlite database file to hold a given workspace')
-    .action((dbFilename, workspace) => {
-        // TODO: verify workspace is parsable
+    .action((dbFilename, workspaceAddress) => {
+        if (existsSync(dbFilename)) {
+            console.warn('ERROR: file already exists: ' + dbFilename);
+            process.exit(1);
+        }
+        let { workspaceParsed, err } = parseWorkspaceAddress(workspaceAddress);
+        if (err || workspaceParsed === null) {
+            console.warn('ERROR: invalid workspace address');
+            console.warn(err);
+            process.exit(1);
+        }
         let storage = new StorageSqlite({
             mode: 'create',
-            workspace: workspace,
+            workspace: workspaceAddress,
             validators: VALIDATORS,
             filename: dbFilename,
         });
+        console.log(`Created new file ${dbFilename} holding workspace ${workspaceAddress}`);
     });
 app
     .command('info <dbFilename>')
@@ -114,7 +125,7 @@ app
     });
 app
     .command('set <dbFilename> <authorFile> <key> <value>')
-    .description('Set a value at a path.  authorFile should be a JSON file.')
+    .description('Set a value at a path.  authorFile should be a JSON file holding a keypair.')
     .action((dbFilename, authorFile, path, value) => {
         let storage = obtainStorage(dbFilename);
         let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
@@ -161,7 +172,7 @@ app
             // two urls
             let url1 = dbOrUrl1;
             let url2 = dbOrUrl2;
-            console.error('NOT IMPLEMENTED YET: sync between two urls');
+            console.error('NOT IMPLEMENTED YET: sync between two URLs.  Instead you can sync Url 1 to a local file, then sync the file to Url 2.');
             process.exit(1);
         }
     });

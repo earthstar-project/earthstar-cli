@@ -10,25 +10,27 @@ You can learn more about workspaces and other Earthstar concepts in the [docs](h
 npm install --global earthstar-cli
 ```
 
-Note that the command this installs is called just `earthstar`, not `earthstar-cli`.
+Note that this installs a command called just `earthstar`, not `earthstar-cli`.
 
 ## Examples
 
-Let's make a new **workspace** called `//demo.123456`.  Workspaces have this format:
+Let's make a new **workspace** called `+demo.123456`.  Workspaces have this format:
 
 ```
-WORKSPACE_ADDRESS: "//" WORKSPACE_NAME "." RANDOM_CHARS
+WORKSPACE_ADDRESS: "+" WORKSPACE_NAME "." RANDOM_CHARS
 
 WORKSPACE_NAME: 1 to 15 lower-case letters
 RANDOM_CHARS: 1 to 44 upper- or lower-case letters or numbers
 ```
 
-Make a new database file that will hold the `//demo.123456` workspace.  All the other commands expect a database to already exist, so you have to create one first.
+Make a new database file that will hold the `+demo.123456` workspace.  All the other commands expect a database to already exist -- you have to create one first.
+
 ```sh
-earthstar create-database demo.sqlite //demo.123456
+earthstar create-database demo.sqlite +demo.123456
 ```
 
 Create an **author** identity starting with `suzy`.  The name must be 4 lowercase letters.  We'll save it in a JSON file.
+
 ```
 earthstar generate-author suzy > author-keypair.json
 
@@ -40,12 +42,14 @@ cat author-keypair.json
   }
 ```
 
-Save a **document** at a **path**, using the author identity we just created.
+Save a **value** at a **path**, thus creating a **document**.  We'll use the author identity we just created.
+
 ```
 earthstar set demo.sqlite author-keypair.json /test/path "Test value"
 ```
 
 Print out the documents in a workspace
+
 ```
 earthstar pairs demo.sqlite
 ----
@@ -55,8 +59,8 @@ earthstar pairs demo.sqlite
 earthstar documents demo.sqlite
 ----
   {
-    "format": "es.2",
-    "workspace": "//demo.123456",
+    "format": "es.3",
+    "workspace": "+demo.123456",
     "path": "/test/path",
     "value": "Test value",
     "author": "@suzy.BvWCCQJfGVNQ1q1VFATBvAwfX4N8bQXWXxvFsViLa85P",
@@ -66,9 +70,10 @@ earthstar documents demo.sqlite
 ```
 
 Sync two sqlite files with each other.  Both must already exist and have the same workspace.
+
 ```sh
 # make another database to sync with
-earthstar create-workspace demo2.sqlite //demo.123456
+earthstar create-workspace demo2.sqlite +demo.123456
 
 # sync
 earthstar sync demo.sqlite demo2.sqlite
@@ -78,6 +83,7 @@ earthstar pairs demo2.sqlite
 ```
 
 Sync with an [earthstar-pub](https://github.com/cinnamon-bun/earthstar-pub) server on the internet.  (This example server might take a moment to start up if it hasn't been used for a while)
+
 ```
 earthstar sync demo.sqlite https://cinnamon-bun-earthstar-pub3.glitch.me
 ```
@@ -88,7 +94,7 @@ Now visit https://cinnamon-bun-earthstar-pub3.glitch.me/workspace/demo.123456 to
 
 Arguments:
 * `<dbFilename>`: filename to an sqlite file
-* `<workspace>`: a workspace address like `//gardening.ac9eEIhf9332He0afwf`
+* `<workspaceAddress>`: a workspace address like `+gardening.ac9eEIhf9332He0afwf`
 * `<authorFile>`: a JSON file in the format printed by `generate-author` containing an author's private key
 * `<path>`: an Earthstar path, starting with a slash
 * `<value>`: any string
@@ -98,22 +104,24 @@ Arguments:
 Usage: earthstar [options] [command]
 
 Options:
-  -h, --help                                   display help for command
+  -h, --help                                        display help for command
 
 Commands:
-  generate-author <shortname>                  Generate and print a new author keypair with
-                                               the given 4-letter shortname
-  create-workspace <dbFilename> <workspace>    Create a new sqlite database file to hold a
-                                               given workspace
-  info <dbFilename>                            Report basic info about the workspace
-  pairs <dbFilename>                           Show paths and values
-  paths <dbFilename>                           List the paths
-  documents <dbFilename>                       List the documents in a workspace including
-                                               history documents
-  values <dbFilename>                          List the values in a workspace (sorted by
-                                               their path)
-  authors <dbFilename>                         List the authors in a workspace
-  set <dbFilename> <authorFile> <key> <value>  Set a value at a path.  authorFile should be
-                                               a JSON file.
-  help [command]                               display help for command
+  generate-author <shortname>                       Generate and print a new author keypair
+                                                    with the given 4-letter shortname
+  create-workspace <dbFilename> <workspaceAddress>  Create a new sqlite database file to hold
+                                                    a given workspace
+  info <dbFilename>                                 Report basic info about the workspace
+  pairs <dbFilename>                                Show paths and values
+  paths <dbFilename>                                List the paths
+  documents <dbFilename>                            List the documents in a workspace
+                                                    including history documents
+  values <dbFilename>                               List the values in a workspace (sorted by
+                                                    their path)
+  authors <dbFilename>                              List the authors in a workspace
+  set <dbFilename> <authorFile> <key> <value>       Set a value at a path.  authorFile should
+                                                    be a JSON file holding a keypair.
+  sync <dbOrUrl1> <dbOrUrl2>                        Sync between two local files and/or
+                                                    remote servers.
+  help [command]                                    display help for command
 ```
