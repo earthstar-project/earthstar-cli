@@ -36,12 +36,12 @@ app
     .command('generate-author <shortname>')
     .description('Generate and print a new author keypair with the given 4-letter shortname')
     .action((shortname) => {
-        // TODO: remove this once earthstar 2.0.1 is published - it checks for you
-        if (shortname.length !== 4) {
-            console.warn('ERROR: shortname must be exactly 4 lowercase letters.');
+        try {
+            console.log(JSON.stringify(generateAuthorKeypair(shortname), null, 2));
+        } catch (e) {
+            console.error('ERROR: ' + e.message);
             process.exit(1);
         }
-        console.log(JSON.stringify(generateAuthorKeypair(shortname), null, 2));
     });
 app
     .command('create-workspace <dbFilename> <workspaceAddress>')
