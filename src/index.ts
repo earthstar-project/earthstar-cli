@@ -5,18 +5,18 @@ import commander = require('commander');
 
 import {
     StorageSqlite,
-    ValidatorEs3,
+    ValidatorEs4,
     generateAuthorKeypair,
     syncLocalAndHttp,
-    IStorage,
-    parseWorkspaceAddress,
+    WriteResult,
+    isErr,
 } from 'earthstar';
 
 //================================================================================
 // HELPERS
 
-let VALIDATORS = [ValidatorEs3];
-let FORMAT = 'es.3';
+let VALIDATORS = [ValidatorEs4];
+let FORMAT = 'es.4';
 
 let obtainStorage = (db : string) : StorageSqlite =>
     new StorageSqlite({
@@ -48,13 +48,13 @@ app
     .description('Create a new sqlite database file to hold a given workspace')
     .action((dbFilename, workspaceAddress) => {
         if (existsSync(dbFilename)) {
-            console.warn('ERROR: file already exists: ' + dbFilename);
+            console.error('ERROR: file already exists: ' + dbFilename);
             process.exit(1);
         }
-        let { workspaceParsed, err } = parseWorkspaceAddress(workspaceAddress);
-        if (err || workspaceParsed === null) {
-            console.warn('ERROR: invalid workspace address');
-            console.warn(err);
+        let err = ValidatorEs4._checkWorkspaceIsValid(workspaceAddress);
+        if (isErr(err)) {
+            console.error('ERROR: invalid workspace address');
+            console.error(err.message);
             process.exit(1);
         }
         let storage = new StorageSqlite({
@@ -84,7 +84,7 @@ app
         let storage = obtainStorage(dbFilename);
         for (let doc of storage.documents()) {
             console.log(doc.path);
-            console.log('    ' + doc.value);
+            console.log('    ' + doc.content);
         }
     });
 app
@@ -106,12 +106,12 @@ app
         }
     });
 app
-    .command('values <dbFilename>')
-    .description('List the values in a workspace (sorted by their path)')
+    .command('contents <dbFilename>')
+    .description('List the contents for all documents in a workspace (sorted by their path)')
     .action((dbFilename : string) => {
         let storage = obtainStorage(dbFilename);
-        for (let value of storage.values()) {
-            console.log(value);
+        for (let content of storage.contents()) {
+            console.log(content);
         }
     });
 app
@@ -124,20 +124,25 @@ app
         }
     });
 app
-    .command('set <dbFilename> <authorFile> <key> <value>')
+    .command('set <dbFilename> <authorFile> <key> <content>')
     .description('Set a value at a path.  authorFile should be a JSON file holding a keypair.')
-    .action((dbFilename, authorFile, path, value) => {
+    .action((dbFilename, authorFile, path, content) => {
         let storage = obtainStorage(dbFilename);
         let keypair = JSON.parse(readFileSync(authorFile, 'utf8'));
-        let success = storage.set(
+        let result = storage.set(
             keypair,
             {
                 format: FORMAT,
                 path: path,
-                value,
+                content: content,
             });
-        if (!success) {
+        if (result === WriteResult.Ignored) {
+            console.warn('set was ignored');
+        } else if (isErr(result)) {
             console.error('ERROR: set failed');
+            console.error(result.message);
+        } else {
+            console.log('document was set.');
         }
     });
 
