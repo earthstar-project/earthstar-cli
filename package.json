@@ -5,7 +5,7 @@
   "main": "./build/index.js",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/cinnamon-bun/earthstar-cli.git"
+    "url": "git+ssh://git@github.com/earthstar-project/earthstar-cli.git"
   },
   "bin": {
     "earthstar": "./build/index.js"
