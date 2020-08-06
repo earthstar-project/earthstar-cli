@@ -1,6 +1,6 @@
 {
   "name": "earthstar-cli",
-  "version": "3.1.0",
+  "version": "5.0.0",
   "description": "Command line tool to manage Earthstar sqlite databases",
   "main": "./build/index.js",
   "repository": {
