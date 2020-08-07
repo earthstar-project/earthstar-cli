@@ -20,7 +20,7 @@ Let's make a new **workspace** called `+demo.123456`.  Workspaces have this form
 WORKSPACE_ADDRESS: "+" WORKSPACE_NAME "." RANDOM_CHARS
 
 WORKSPACE_NAME: 1 to 15 lower-case letters
-RANDOM_CHARS: 1 to 44 upper- or lower-case letters or numbers
+RANDOM_CHARS: 1 to 53 upper- or lower-case letters or numbers
 ```
 
 Make a new database file that will hold the `+demo.123456` workspace.  All the other commands expect a database to already exist -- you have to create one first.
@@ -29,7 +29,7 @@ Make a new database file that will hold the `+demo.123456` workspace.  All the o
 earthstar create-database demo.sqlite +demo.123456
 ```
 
-Create an **author** identity starting with `suzy`.  The name must be 4 lowercase letters.  We'll save it in a JSON file.
+Create an **author** identity starting with `suzy`.  The name must be 4 lowercase letters.  We'll save it in a JSON file.  (This will make a different identity every ime you run it, but they will all start with `suzy`).
 
 ```
 earthstar generate-author suzy > author-keypair.json
@@ -37,8 +37,8 @@ earthstar generate-author suzy > author-keypair.json
 cat author-keypair.json
 ---
   {
-    "address": "@suzy.BvWCCQJfGVNQ1q1VFATBvAwfX4N8bQXWXxvFsViLa85P",
-    "secret": "3P1BisPyTs2EGMSHpXKHLbeoZewrYePfETbf19gi8E6z"
+    "address": "@suzy.bjzee56v2hd6mv5r5ar3xqg3x3oyugf7fejpxnvgquxcubov4rntq",
+    "secret": "b6jd7p43h7kk77zjhbrgoknsrzpwewqya35yh4t3hvbmqbatkbh2a"
   }
 ```
 
@@ -63,13 +63,13 @@ earthstar documents demo.sqlite
     "workspace": "+demo.123456",
     "path": "/test/path",
     "value": "Test value",
-    "author": "@suzy.BvWCCQJfGVNQ1q1VFATBvAwfX4N8bQXWXxvFsViLa85P",
+    "author": "@suzy.bjzee56.... redacted for length",
     "timestamp": 1592936759163000,
     "signature": (... redacted for length ...)
   }
 ```
 
-Sync two sqlite files with each other.  Both must already exist and have the same workspace.
+Sync two sqlite files with each other.  Both must already exist and have the same workspace.  (You can't sync documents across different workspaces).
 
 ```sh
 # make another database to sync with
@@ -85,10 +85,10 @@ earthstar pairs demo2.sqlite
 Sync with an [earthstar-pub](https://github.com/cinnamon-bun/earthstar-pub) server on the internet.  (This example server might take a moment to start up if it hasn't been used for a while)
 
 ```
-earthstar sync demo.sqlite https://cinnamon-bun-earthstar-pub3.glitch.me
+earthstar sync demo.sqlite https://earthstar-demo-pub-v5-a.glitch.me/
 ```
 
-Now visit https://cinnamon-bun-earthstar-pub3.glitch.me/workspace/demo.123456 to see your data on the server.  (Pub servers exist to help with syncing, not to publish things to the internet, but for this demo you can view the content through the web.)
+Now visit https://earthstar-demo-pub-v5-a.glitch.me/workspace/+demo.123456 to see your data on the server.  (Pub servers exist to help with syncing, not to publish things to the internet, but for this demo you can view the content through the web.)
 
 ## Usage
 
