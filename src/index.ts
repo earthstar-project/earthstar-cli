@@ -19,13 +19,18 @@ import {
 let VALIDATORS = [ValidatorEs4];
 let FORMAT = 'es.4';
 
-let obtainStorage = (db : string) : StorageSqlite =>
-    new StorageSqlite({
+let obtainStorage = (dbFilename : string) : StorageSqlite => {
+    if (!existsSync(dbFilename)) {
+        console.error('ERROR: no such file: ' + dbFilename);
+        process.exit(1);
+    }
+    return new StorageSqlite({
         mode: 'open',
         workspace: null,
         validators: VALIDATORS,
-        filename: db,
+        filename: dbFilename,
     });
+}
 
 //================================================================================
 
