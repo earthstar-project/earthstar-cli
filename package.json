@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "commander": "^5.1.0",
-    "earthstar": "^5.0.0",
+    "earthstar": "^6.0.0-beta.0",
     "node-fetch": "^2.6.0",
     "tslib": "^2.0.0"
   }

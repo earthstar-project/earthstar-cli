@@ -2,9 +2,9 @@
 
 rm foo.sqlite foo2.sqlite foo.json bar.sqlite
 
-node build/index.js create-workspace foo.sqlite +foo.123456
-node build/index.js create-workspace foo2.sqlite +foo.123456
-node build/index.js create-workspace bar.sqlite +bar.123456
+node build/index.js create-workspace foo.sqlite +foo.aaaaaaa
+node build/index.js create-workspace foo2.sqlite +foo.aaaaaaa
+node build/index.js create-workspace bar.sqlite +bar.aaaaaaa
 node build/index.js generate-author fooo > foo.json
 node build/index.js set foo.sqlite foo.json /test/path "Test value"
 echo
