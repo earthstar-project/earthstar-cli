@@ -2,69 +2,32 @@
 
 import {
     existsSync,
-    fstat,
-    fstatSync,
-    lstatSync,
     readFileSync,
-    readdirSync,
 } from 'fs';
 import {
-    basename,
     dirname,
-    join,
 } from 'path';
 import commander = require('commander');
 
 import {
     StorageSqlite,
     ValidatorEs4,
-    generateAuthorKeypair,
-    syncLocalAndHttp,
     WriteResult,
+    generateAuthorKeypair,
     isErr,
     syncLocal,
+    syncLocalAndHttp,
 } from 'earthstar';
-import { outputHelp } from 'commander';
+
+import {
+    isFile,
+    isDirectory,
+} from './helpers';
+
+import { syncLocalAndSqlite } from './sync-local';
 
 //================================================================================
 // HELPERS
-
-let isDirectory = (p: string) => 
-    lstatSync(p).isDirectory();
-let isFile = (p: string) => 
-    lstatSync(p).isFile();
-
-// Scan a directory into a flat list of paths, relative to the dirPath, in arbitrary order.
-// Example: for the folder "/home/usr/whatever/test-sync-local", this returns:
-//   [
-//       'test-sync-local/files/apple.txt',
-//       'test-sync-local/files/banana-empty.txt',
-//       'test-sync-local/files/hello.txt',
-//       'test-sync-local/files/vegetables/carrot.txt',
-//       'test-sync-local/files/vegetables/cucumber.txt',
-//       'test-sync-local/files/vegetables/radish.txt'
-//   ]
-// This is a synchronous operation.
-//
-let walkDir = (dirPath: string): string[] => {
-    // handle edge cases
-    if (!existsSync(dirPath)) { throw new Error('path does not exist: ' + dirPath); }
-    if (!isDirectory(dirPath) && !isFile(dirPath)) { throw new Error('path is neither directory nor file??: ' + dirPath); }
-    //if (isFile(dirPath)) { return [ dirPath ] }
-    if (!isDirectory(dirPath)) { throw new Error('path is not a directory:' + dirPath); }
-
-    let output: string[] = [];
-    let filenames = readdirSync(dirPath);
-    for (let filename of filenames) {
-        let filePath = join(dirPath, filename);
-        if (isDirectory(filePath)) { 
-            output = output.concat(walkDir(filePath));
-        } else if (isFile(filePath)) {
-            output.push(filePath);
-        }
-    }
-    return output;
-}
 
 let VALIDATORS = [ValidatorEs4];
 let FORMAT = 'es.4';
@@ -237,14 +200,7 @@ app
             console.error('cannot use an sqlite file that\'s inside the directory to be synced')
             process.exit(1)
         }
-        console.log('success')
-        
-        console.log('-----------------------------------');
-        console.log(walkDir(dirPath))
-        console.log('-----------------------------------');
-
-        // compare manifest file to sqlite and take action
-
+        syncLocalAndSqlite(dirPath, sqlitePath);
     });
 
 app
