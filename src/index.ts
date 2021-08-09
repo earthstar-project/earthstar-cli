@@ -1,6 +1,18 @@
 #!/usr/bin/env node
 
-import { readFileSync, existsSync } from 'fs';
+import {
+    existsSync,
+    fstat,
+    fstatSync,
+    lstatSync,
+    readFileSync,
+    readdirSync,
+} from 'fs';
+import {
+    basename,
+    dirname,
+    join,
+} from 'path';
 import commander = require('commander');
 
 import {
@@ -12,9 +24,47 @@ import {
     isErr,
     syncLocal,
 } from 'earthstar';
+import { outputHelp } from 'commander';
 
 //================================================================================
 // HELPERS
+
+let isDirectory = (p: string) => 
+    lstatSync(p).isDirectory();
+let isFile = (p: string) => 
+    lstatSync(p).isFile();
+
+// Scan a directory into a flat list of paths, relative to the dirPath, in arbitrary order.
+// Example: for the folder "/home/usr/whatever/test-sync-local", this returns:
+//   [
+//       'test-sync-local/files/apple.txt',
+//       'test-sync-local/files/banana-empty.txt',
+//       'test-sync-local/files/hello.txt',
+//       'test-sync-local/files/vegetables/carrot.txt',
+//       'test-sync-local/files/vegetables/cucumber.txt',
+//       'test-sync-local/files/vegetables/radish.txt'
+//   ]
+// This is a synchronous operation.
+//
+let walkDir = (dirPath: string): string[] => {
+    // handle edge cases
+    if (!existsSync(dirPath)) { throw new Error('path does not exist: ' + dirPath); }
+    if (!isDirectory(dirPath) && !isFile(dirPath)) { throw new Error('path is neither directory nor file??: ' + dirPath); }
+    //if (isFile(dirPath)) { return [ dirPath ] }
+    if (!isDirectory(dirPath)) { throw new Error('path is not a directory:' + dirPath); }
+
+    let output: string[] = [];
+    let filenames = readdirSync(dirPath);
+    for (let filename of filenames) {
+        let filePath = join(dirPath, filename);
+        if (isDirectory(filePath)) { 
+            output = output.concat(walkDir(filePath));
+        } else if (isFile(filePath)) {
+            output.push(filePath);
+        }
+    }
+    return output;
+}
 
 let VALIDATORS = [ValidatorEs4];
 let FORMAT = 'es.4';
@@ -153,6 +203,48 @@ app
             console.log('document was set.');
         }
         storage.close();
+    });
+
+
+app
+    .command('sync-local <localPathOrSqliteFile1> <localPathOrSqliteFile2>')
+    .description('Sync a local directoy of actual files with an Earthstar sqlite file.')
+    .action(async (a: string, b: string) => {
+        if (!existsSync(a) || !existsSync(b)) {
+            console.error('both paths must already exist:');
+            console.error('', a);
+            console.error('', b);
+            process.exit(1)
+        }
+        let dirPath: string;
+        let sqlitePath: string;
+        if (isFile(a) && isDirectory(b)) {
+            dirPath = b
+            sqlitePath = a;
+        } else if (isDirectory(a) && isFile(b)) {
+            dirPath = a
+            sqlitePath = b;
+        } else {
+            console.error('expected one path to an existing directory and one to an existing sqlite file.')
+            process.exit(1)
+        }
+        if (!sqlitePath.endsWith('.sqlite')) {
+            console.error('expected sqlite file to end in ".sqlite"')
+            process.exit(1)
+        }
+        let sqliteDirname = dirname(sqlitePath);
+        if (sqliteDirname === dirPath) {
+            console.error('cannot use an sqlite file that\'s inside the directory to be synced')
+            process.exit(1)
+        }
+        console.log('success')
+        
+        console.log('-----------------------------------');
+        console.log(walkDir(dirPath))
+        console.log('-----------------------------------');
+
+        // compare manifest file to sqlite and take action
+
     });
 
 app
