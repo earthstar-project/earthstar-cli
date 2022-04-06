@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "cli": "deno run --unstable --allow-all --no-check src/main.ts"
+  }
+}

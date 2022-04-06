@@ -1,0 +1,8 @@
+{
+  "co.gwil.deno.config.enableLinting" : "true",
+  "co.gwil.deno.config.enableLsp" : "true",
+  "co.gwil.deno.config.enableUnstable" : "true",
+  "co.gwil.deno.config.formatOnSave" : "null",
+  "workspace.art_style" : 0,
+  "workspace.name" : "stone-soup CLI"
+}
