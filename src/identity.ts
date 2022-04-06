@@ -220,6 +220,35 @@ export function registerIdentityCommand(cmd: Cliffy.Command) {
 
             Deno.exit(0);
           }),
+      ).command(
+        "info",
+        new Cliffy.Command().description(
+          "Show a stored identity's full address and secret",
+        ).option("--idAddress [type:string]", "The address to show info for.", {
+          required: false,
+        }).action(async ({ idAddress }) => {
+          const identities = getIdentities();
+
+          if (Object.keys(identities).length === 0) {
+            console.log("No identities have been stored.");
+            Deno.exit(0);
+          }
+
+          const address = idAddress || await Cliffy.Select.prompt({
+            message: "Choose which identity to show info for",
+            options: Object.keys(identities),
+          });
+
+          if (!identities[address]) {
+            console.log(`No known identity with the address ${address}`);
+            return Deno.exit(0);
+          }
+
+          const secret = identities[address];
+
+          new Cliffy.Table().body([["Address", address], ["Secret", secret]])
+            .border(true).render();
+        }),
       ),
   );
 }
