@@ -3,6 +3,9 @@ import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
 import { logSuccess, logWarning } from "./util.ts";
+import { MANIFEST_FILE_NAME } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/constants.ts";
+import { Manifest } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/sync-fs-types.ts";
+import { getDirAssociatedShare } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/util.ts";
 
 const LS_SHARE_DIR_KEY = "shares_dir";
 
@@ -574,8 +577,7 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
             Deno.exit(1);
           }
 
-          const address = share || await promptShare();
-          const replica = await openShare(address);
+          let dirToSyncWith = dirPath || Deno.cwd();
 
           // Use dirPath flag if provided.
 
@@ -584,8 +586,6 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
           // If it does, use this directory.
           // If it doesn't, traverse upwards until one is found.
           // If none is found, use this directory.
-
-          let dirToSyncWith = dirPath || Deno.cwd();
 
           if (!dirPath) {
             try {
@@ -600,6 +600,11 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
               }
             }
           }
+
+          const associatedShare = await getDirAssociatedShare(dirToSyncWith);
+
+          const address = associatedShare || share || await promptShare();
+          const replica = await openShare(address);
 
           const { name } = Earthstar.parseShareAddress(replica.share);
 
