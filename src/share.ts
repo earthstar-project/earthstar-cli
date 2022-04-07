@@ -3,9 +3,8 @@ import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
 import { logSuccess, logWarning } from "./util.ts";
-import { MANIFEST_FILE_NAME } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/constants.ts";
-import { Manifest } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/sync-fs-types.ts";
 import { getDirAssociatedShare } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/util.ts";
+import { getServers } from "./servers.ts";
 
 const LS_SHARE_DIR_KEY = "shares_dir";
 
@@ -478,46 +477,69 @@ function registerContentShareCommand(cmd: Cliffy.Command) {
 
 function registerSyncShareCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "sync <dbPathOrUrl>",
+    "sync",
     new Cliffy.Command().description(
-      "Sync this document with a remote peer or Sqlite Earthstar database.",
+      "Sync this document with a known replica servers or a local Earthstar database..",
+    ).option(
+      "--dbPath [type:string]",
+      "The path of a Sqlite Earthstar database to sync",
+      {
+        conflicts: ["serverUrl"],
+      },
+    ).option(
+      "--serverUrl [type:string]",
+      "The path of a Sqlite Earthstar database to sync",
+      {
+        conflicts: ["dbPath"],
+      },
     )
       .action(
-        async (_flags, dbPathOrUrl: string) => {
+        async (
+          { dbPath, serverUrl }: { dbPath: string; serverUrl: string },
+        ) => {
           const peer = await getPeer();
 
-          try {
-            const url = new URL(dbPathOrUrl);
+          const servers = getServers();
 
-            try {
-              peer.sync(url.toString());
+          if (!dbPath && !serverUrl && servers.length === 0) {
+            console.log("No known replica servers to sync with.");
+          }
 
-              console.log(
-                `Syncing with ${dbPathOrUrl}. Press any key to stop.`,
-              );
-            } catch (err) {
-              logWarning(`Failed to sync with ${dbPathOrUrl}!`);
-              console.error(err);
-              Deno.exit(1);
-            }
+          const thingsToSyncWith: (string | Earthstar.Peer)[] = [];
 
-            await keypress();
-            peer.stopSyncing();
-            console.log("Stopped syncing.");
-            Deno.exit(0);
-          } catch {
-            // Not a URL, must be a DB path.
-            const otherReplica = openReplica(dbPathOrUrl);
-
+          if (dbPath) {
+            const otherReplica = openReplica(dbPath);
             const otherPeer = new Earthstar.Peer();
             otherPeer.addReplica(otherReplica);
+            thingsToSyncWith.push(otherPeer);
+          } else if (serverUrl) {
+            thingsToSyncWith.push(serverUrl);
+          } else {
+            thingsToSyncWith.push(...servers);
+          }
 
-            peer.sync(otherPeer);
+          thingsToSyncWith.forEach((syncable) => {
+            peer.sync(syncable);
+          });
 
+          if (dbPath) {
             console.log(
-              `Syncing with ${dbPathOrUrl}...`,
+              `Syncing with ${dbPath}. Press any key to stop.`,
+            );
+          } else if (serverUrl) {
+            console.log(
+              `Syncing with ${serverUrl}. Press any key to stop.`,
+            );
+          } else {
+            console.log(
+              `Syncing with ${thingsToSyncWith.length} peers. Press any key to stop.`,
             );
           }
+
+          await keypress();
+          peer.stopSyncing();
+          console.log("Stopped syncing.");
+          Deno.exit(0);
         },
       ),
   );

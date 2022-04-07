@@ -1,6 +1,7 @@
 import { Cliffy } from "../deps.ts";
 
 import { registerIdentityCommand } from "./identity.ts";
+import { registerServerCommands } from "./servers.ts";
 import { registerShareCommands } from "./share.ts";
 
 const mainCommand = new Cliffy.Command()
@@ -11,5 +12,6 @@ const mainCommand = new Cliffy.Command()
 
 registerIdentityCommand(mainCommand);
 registerShareCommands(mainCommand);
+registerServerCommands(mainCommand);
 
 await mainCommand.parse(Deno.args);
