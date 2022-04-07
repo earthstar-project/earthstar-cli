@@ -1,4 +1,4 @@
-import { Cliffy, distanceToNow, Earthstar } from "../deps.ts";
+import { Cliffy, distanceToNow, Earthstar, keypress } from "../deps.ts";
 import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
@@ -489,7 +489,22 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
           try {
             const url = new URL(dbPathOrUrl);
 
-            peer.sync(url.toString());
+            try {
+              peer.sync(url.toString());
+
+              console.log(
+                `Syncing with ${dbPathOrUrl}. Press any key to stop.`,
+              );
+            } catch (err) {
+              logWarning(`Failed to sync with ${dbPathOrUrl}!`);
+              console.error(err);
+              Deno.exit(1);
+            }
+
+            await keypress();
+            peer.stopSyncing();
+            console.log("Stopped syncing.");
+            Deno.exit(0);
           } catch {
             // Not a URL, must be a DB path.
             const otherReplica = openReplica(dbPathOrUrl);
@@ -498,9 +513,11 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
             otherPeer.addReplica(otherReplica);
 
             peer.sync(otherPeer);
-          }
 
-          console.log(`Syncing with ${dbPathOrUrl}...`);
+            console.log(
+              `Syncing with ${dbPathOrUrl}...`,
+            );
+          }
         },
       ),
   );
