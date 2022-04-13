@@ -38,7 +38,7 @@ function removeServer(address: string): boolean {
 
 function registerListServerCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "ls",
+    "list",
     new Cliffy.Command().description(
       "Add a URL to the list of known replica servers.",
     )
