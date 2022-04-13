@@ -5,6 +5,7 @@ import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
 import { logSuccess, logWarning } from "./util.ts";
 import { getDirAssociatedShare } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/util.ts";
 import { getServers } from "./servers.ts";
+import { ensureDir } from "https://deno.land/std@0.132.0/fs/mod.ts";
 
 const LS_SHARE_DIR_KEY = "shares_dir";
 
@@ -46,6 +47,8 @@ async function setShareDir(message: string) {
   });
 
   localStorage.setItem(LS_SHARE_DIR_KEY, newSharesDir);
+
+  await ensureDir(newSharesDir);
 
   return newSharesDir;
 }
@@ -233,7 +236,7 @@ function registerChangeDirShareCommand(cmd: Cliffy.Command) {
 
 function registerLsShareCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "ls",
+    "list",
     new Cliffy.Command().description("List all stored shares.")
       .option("-s, --suffix [type:boolean]", "Show address suffixes", {
         default: false,
@@ -503,6 +506,7 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
 
           if (!dbPath && !serverUrl && servers.length === 0) {
             console.log("No known replica servers to sync with.");
+            Deno.exit(0);
           }
 
           const thingsToSyncWith: (string | Earthstar.Peer)[] = [];
@@ -518,28 +522,60 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
             thingsToSyncWith.push(...servers);
           }
 
-          thingsToSyncWith.forEach((syncable) => {
-            peer.sync(syncable);
+          peer.syncerStatuses.bus.on("changed", (_key) => {
+            const rows = [];
+
+            for (
+              const [connection, statuses] of peer.syncerStatuses.entries()
+            ) {
+              rows.push([new Cliffy.Cell(connection).colSpan(3)]);
+              rows.push(["Share", "Pulled", "New"]);
+
+              Object.keys(statuses).forEach((shareAddress) => {
+                const { ingestedCount, pulledCount } = (statuses)[shareAddress];
+
+                const { name } = Earthstar.parseShareAddress(shareAddress);
+
+                rows.push([
+                  `+${name}`,
+                  `${pulledCount}`,
+                  `${ingestedCount}`,
+                ]);
+              });
+            }
+
+            Cliffy.tty.clearTerminal();
+
+            if (dbPath) {
+              console.log(
+                `Syncing with ${dbPath}...`,
+              );
+            } else if (serverUrl) {
+              console.log(
+                `Syncing with ${serverUrl}...`,
+              );
+            } else {
+              console.log(
+                `Syncing with ${thingsToSyncWith.length} peer${
+                  thingsToSyncWith.length > 1 ? "s" : ""
+                }...`,
+              );
+            }
+
+            new Cliffy.Table().border(true).body(rows).render();
           });
 
-          if (dbPath) {
-            console.log(
-              `Syncing with ${dbPath}. Press any key to stop.`,
-            );
-          } else if (serverUrl) {
-            console.log(
-              `Syncing with ${serverUrl}. Press any key to stop.`,
-            );
-          } else {
-            console.log(
-              `Syncing with ${thingsToSyncWith.length} peers. Press any key to stop.`,
-            );
-          }
+          try {
+            await peer.syncUntilCaughtUp(thingsToSyncWith);
 
-          await keypress();
-          peer.stopSyncing();
-          console.log("Stopped syncing.");
-          Deno.exit(0);
+            logSuccess("Synced.");
+
+            Deno.exit(0);
+          } catch (err) {
+            logWarning("Something went wrong when trying to sync!");
+            console.error(err);
+            Deno.exit(1);
+          }
         },
       ),
   );
