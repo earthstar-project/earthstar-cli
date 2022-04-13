@@ -60,7 +60,7 @@ export function registerIdentityCommand(cmd: Cliffy.Command) {
     new Cliffy.Command()
       .description("Manage identities used to sign documents.")
       .command(
-        "ls",
+        "list",
         new Cliffy.Command()
           .description("List all saved identities")
           .action(() => {
