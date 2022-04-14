@@ -1,4 +1,4 @@
-import { Cliffy, distanceToNow, Earthstar, keypress } from "../deps.ts";
+import { Cliffy, distanceToNow, Earthstar } from "../deps.ts";
 import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
@@ -609,11 +609,27 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
         "Whether to allow syncing with a directory with existing files but which has never been synced with a share before.",
         {
           required: false,
+          default: false,
+        },
+      )
+      .option(
+        "--overwriteFilesAtOwnedPaths [type:boolean]",
+        "Whether to force overwrite files at paths the provided identity doesn't own.",
+        {
+          required: false,
+          default: false,
         },
       )
       .action(
         async (
-          { idAddress, idSecret, allowUnsyncedDirWithFiles, share, dirPath },
+          {
+            idAddress,
+            idSecret,
+            allowUnsyncedDirWithFiles,
+            share,
+            dirPath,
+            overwriteFilesAtOwnedPaths,
+          },
         ) => {
           let keypair: Earthstar.AuthorKeypair | null = null;
 
@@ -686,9 +702,10 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
           try {
             await Earthstar.syncReplicaAndFsDir({
               keypair,
-              allowDirtyDirWithoutManifest: !!allowUnsyncedDirWithFiles,
+              allowDirtyDirWithoutManifest: allowUnsyncedDirWithFiles,
               replica,
               dirPath: dirToSyncWith,
+              overwriteFilesAtOwnedPaths,
             });
 
             logSuccess(`Synced +${name} with ${dirToSyncWith}`);

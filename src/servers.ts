@@ -1,4 +1,4 @@
-import { Cliffy, Earthstar } from "../deps.ts";
+import { Cliffy } from "../deps.ts";
 import { logSuccess, logWarning } from "./util.ts";
 
 const LS_SERVERS_KEY = "servers";
