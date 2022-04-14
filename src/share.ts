@@ -708,7 +708,7 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
               overwriteFilesAtOwnedPaths,
             });
 
-            logSuccess(`Synced +${name} with ${dirToSyncWith}`);
+            logSuccess(`Synced +${name} with ${path.resolve(dirToSyncWith)}`);
           } catch (err) {
             logWarning(`Could not sync +${name} with ${dirToSyncWith}`);
             console.error(err.message);
