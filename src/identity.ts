@@ -56,7 +56,7 @@ function clearCurrentIdentity() {
 
 export function registerIdentityCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "identity",
+    "identities",
     new Cliffy.Command()
       .description("Manage identities used to sign documents.")
       .command(
