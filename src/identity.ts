@@ -241,49 +241,60 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
       "Show a stored identity's full address and secret",
     ).option("--idAddress [type:string]", "The address to show info for.", {
       required: false,
-    }).option(
-      "--onlyAddress [type:boolean]",
-      "Only output the identity's address.",
-      {
-        required: false,
-        conflicts: ["onlySecret"],
-      },
-    ).option(
-      "--onlySecret [type:boolean]",
-      "Only output the identity's secret.",
-      {
-        required: false,
-        conflicts: ["onlyAddress"],
-      },
-    ).action(async ({ idAddress, onlyAddress, onlySecret }) => {
-      const identities = getIdentities();
+    })
+      .option(
+        "--current [type:boolean]",
+        "Use the currently selected identity",
+        {
+          required: false,
+          conflicts: ["idAddress"],
+        },
+      )
+      .option(
+        "--onlyAddress [type:boolean]",
+        "Only output the identity's address.",
+        {
+          required: false,
+          conflicts: ["onlySecret"],
+        },
+      ).option(
+        "--onlySecret [type:boolean]",
+        "Only output the identity's secret.",
+        {
+          required: false,
+          conflicts: ["onlyAddress"],
+        },
+      ).action(async ({ current, idAddress, onlyAddress, onlySecret }) => {
+        const identities = getIdentities();
 
-      if (Object.keys(identities).length === 0) {
-        console.log("No identities have been stored.");
-        Deno.exit(0);
-      }
+        if (Object.keys(identities).length === 0) {
+          console.log("No identities have been stored.");
+          Deno.exit(0);
+        }
 
-      const address = idAddress || await Cliffy.Select.prompt({
-        message: "Choose which identity to show info for",
-        options: Object.keys(identities),
-      });
+        const address = current
+          ? getCurrentIdentity()
+          : null || idAddress || await Cliffy.Select.prompt({
+            message: "Choose which identity to show info for",
+            options: Object.keys(identities),
+          });
 
-      if (!identities[address]) {
-        console.log(`No known identity with the address ${address}`);
-        return Deno.exit(0);
-      }
+        if (!identities[address]) {
+          console.log(`No known identity with the address ${address}`);
+          return Deno.exit(0);
+        }
 
-      const secret = identities[address];
+        const secret = identities[address];
 
-      if (onlyAddress) {
-        console.log(address);
-      } else if (onlySecret) {
-        console.log(secret);
-      } else {
-        new Cliffy.Table().body([["Address", address], ["Secret", secret]])
-          .border(true).render();
-      }
-    }),
+        if (onlyAddress) {
+          console.log(address);
+        } else if (onlySecret) {
+          console.log(secret);
+        } else {
+          new Cliffy.Table().body([["Address", address], ["Secret", secret]])
+            .border(true).render();
+        }
+      }),
   );
 }
 
