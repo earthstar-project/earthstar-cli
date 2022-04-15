@@ -108,7 +108,9 @@ function registerRemoveServerCommand(cmd: Cliffy.Command) {
 export function registerServerCommands(cmd: Cliffy.Command) {
   const serverCommand = new Cliffy.Command().description(
     "Manage known replica servers.",
-  );
+  ).action(() => {
+    serverCommand.showHelp();
+  });
 
   registerListServerCommand(serverCommand);
   registerAddServerCommand(serverCommand);

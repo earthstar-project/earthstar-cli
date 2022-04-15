@@ -757,7 +757,9 @@ function registerRemoveShareCommand(cmd: Cliffy.Command) {
 export function registerShareCommands(cmd: Cliffy.Command) {
   const shareCommand = new Cliffy.Command().description(
     "Manage Earthstar shares.",
-  );
+  ).action(() => {
+    shareCommand.showHelp();
+  });
 
   registerAddShareCommand(shareCommand);
   registerLsShareCommand(shareCommand);
