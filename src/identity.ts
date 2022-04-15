@@ -241,7 +241,21 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
       "Show a stored identity's full address and secret",
     ).option("--idAddress [type:string]", "The address to show info for.", {
       required: false,
-    }).action(async ({ idAddress }) => {
+    }).option(
+      "--onlyAddress [type:boolean]",
+      "Only output the identity's address.",
+      {
+        required: false,
+        conflicts: ["onlySecret"],
+      },
+    ).option(
+      "--onlySecret [type:boolean]",
+      "Only output the identity's secret.",
+      {
+        required: false,
+        conflicts: ["onlyAddress"],
+      },
+    ).action(async ({ idAddress, onlyAddress, onlySecret }) => {
       const identities = getIdentities();
 
       if (Object.keys(identities).length === 0) {
@@ -261,8 +275,14 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
 
       const secret = identities[address];
 
-      new Cliffy.Table().body([["Address", address], ["Secret", secret]])
-        .border(true).render();
+      if (onlyAddress) {
+        console.log(address);
+      } else if (onlySecret) {
+        console.log(secret);
+      } else {
+        new Cliffy.Table().body([["Address", address], ["Secret", secret]])
+          .border(true).render();
+      }
     }),
   );
 }
