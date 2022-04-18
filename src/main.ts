@@ -6,7 +6,7 @@ import { registerShareCommands } from "./share.ts";
 
 const mainCommand = new Cliffy.Command()
   .name("earthstar")
-  .version("8.1.0").description(
+  .version("8.2.0").description(
     "Sync, view, and write documents to Earthstar shares.",
   ).action(() => {
     mainCommand.showHelp();
