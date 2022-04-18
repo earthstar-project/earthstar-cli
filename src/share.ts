@@ -617,7 +617,6 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
         "Whether to force overwrite files at paths the provided identity doesn't own.",
         {
           required: false,
-          default: false,
         },
       )
       .action(
@@ -705,7 +704,7 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
               allowDirtyDirWithoutManifest: allowUnsyncedDirWithFiles,
               replica,
               dirPath: dirToSyncWith,
-              overwriteFilesAtOwnedPaths,
+              overwriteFilesAtOwnedPaths: !!overwriteFilesAtOwnedPaths,
             });
 
             logSuccess(`Synced +${name} with ${path.resolve(dirToSyncWith)}`);
