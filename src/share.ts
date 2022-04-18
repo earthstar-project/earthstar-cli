@@ -2,7 +2,7 @@ import { Cliffy, distanceToNow, Earthstar } from "../deps.ts";
 import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
-import { logSuccess, logWarning } from "./util.ts";
+import { logEmphasis, logSuccess, logWarning } from "./util.ts";
 import { getDirAssociatedShare } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/util.ts";
 import { getServers } from "./servers.ts";
 import { ensureDir } from "https://deno.land/std@0.132.0/fs/mod.ts";
@@ -176,6 +176,60 @@ function logDoc(doc: Earthstar.Doc) {
     ],
   ).border(true).maxColWidth(50)
     .render();
+}
+
+function registerGenerateShareCommand(cmd: Cliffy.Command) {
+  cmd.command(
+    "generate <name>",
+    new Cliffy.Command().description(
+      "Generate a new share address using a human readable name.",
+    ).option(
+      "-a, --add [type:boolean]",
+      "Add to saved shares",
+      {
+        default: true,
+      },
+    ).action(
+      async (
+        { add },
+        name: string,
+      ) => {
+        const result = Earthstar.generateShareAddress(name);
+
+        if (Earthstar.isErr(result)) {
+          logWarning("Could not generate share address.");
+          console.error(result);
+          Deno.exit(1);
+        }
+
+        logSuccess("Generated share address.");
+
+        if (!add) {
+          console.log(result);
+          Deno.exit(0);
+        }
+
+        const dirPath = await getSharesDir();
+        const dbPath = path.join(dirPath, `${result}.sqlite`);
+
+        try {
+          const driver = new Earthstar.ReplicaDriverSqlite({
+            filename: dbPath,
+            mode: "create",
+            share: result,
+          });
+
+          logSuccess(`Added ${driver.share}`);
+
+          await driver.close(false);
+        } catch (err) {
+          logWarning("Failed to persist share.");
+          console.error(err);
+          Deno.exit(1);
+        }
+      },
+    ),
+  );
 }
 
 function registerAddShareCommand(cmd: Cliffy.Command) {
@@ -709,8 +763,17 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
 
             logSuccess(`Synced +${name} with ${path.resolve(dirToSyncWith)}`);
           } catch (err) {
-            logWarning(`Could not sync +${name} with ${dirToSyncWith}`);
+            logWarning(
+              `Could not sync +${name} with ${path.resolve(dirToSyncWith)}`,
+            );
+
             console.error(err.message);
+
+            if (err.message.indexOf("can't write to path /") !== -1) {
+              logEmphasis(
+                "If you're fine with this file being overwritten by the one from the replica, you can resolve this problem with the --overwriteFilesAtOwnedPaths flag.",
+              );
+            }
           }
         },
       ),
@@ -760,6 +823,7 @@ export function registerShareCommands(cmd: Cliffy.Command) {
     shareCommand.showHelp();
   });
 
+  registerGenerateShareCommand(shareCommand);
   registerAddShareCommand(shareCommand);
   registerLsShareCommand(shareCommand);
   registerRemoveShareCommand(shareCommand);

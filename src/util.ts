@@ -5,3 +5,7 @@ export function logWarning(msg: string) {
 export function logSuccess(msg: string) {
   console.error(`%c${msg}`, "color: green");
 }
+
+export function logEmphasis(msg: string) {
+  console.error(`%c${msg}`, "color: blue");
+}
