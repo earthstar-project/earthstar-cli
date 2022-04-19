@@ -762,6 +762,7 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
             });
 
             logSuccess(`Synced +${name} with ${path.resolve(dirToSyncWith)}`);
+            Deno.exit(0);
           } catch (err) {
             logWarning(
               `Could not sync +${name} with ${path.resolve(dirToSyncWith)}`,
@@ -774,6 +775,8 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
                 "If you're fine with this file being overwritten by the one from the replica, you can resolve this problem with the --overwriteFilesAtOwnedPaths flag.",
               );
             }
+
+            Deno.exit(1);
           }
         },
       ),
