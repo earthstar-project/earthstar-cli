@@ -24,10 +24,12 @@ export function registerUpgradeCommand(cmd: Cliffy.Command) {
             "--allow-write",
             "--allow-net",
             "--allow-run",
+            "--allow-env",
             "--no-check",
             "--unstable",
             "-f",
-            "--location=http://earthstar-project.org",
+            "--location",
+            "https://earthstar-project.org",
             "-n",
             "earthstar",
             `https://deno.land/x/earthstar_cli@${
