@@ -7,7 +7,7 @@ import { registerUpgradeCommand } from "./upgrade.ts";
 
 const mainCommand = new Cliffy.Command()
   .name("earthstar")
-  .version("v8.3.0").description(
+  .version("v8.3.1").description(
     "Sync, view, and write documents to Earthstar shares.",
   ).action(() => {
     mainCommand.showHelp();

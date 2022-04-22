@@ -77,6 +77,8 @@ function registerListIdentityCommand(cmd: Cliffy.Command) {
           .body(
             rows,
           ).render();
+
+        Deno.exit(0);
       }),
   );
 }
@@ -125,6 +127,8 @@ function registerGenerateIdentityCommand(cmd: Cliffy.Command) {
             const { name } = Earthstar.parseAuthorAddress(result.address);
 
             logSuccess(`Added @${name} to stored identities.`);
+
+            Deno.exit(0);
           }
         },
       ),
@@ -294,6 +298,8 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
           new Cliffy.Table().body([["Address", address], ["Secret", secret]])
             .border(true).render();
         }
+
+        Deno.exit(0);
       }),
   );
 }

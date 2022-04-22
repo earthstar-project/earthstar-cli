@@ -222,6 +222,7 @@ function registerGenerateShareCommand(cmd: Cliffy.Command) {
           logSuccess(`Added ${driver.share}`);
 
           await driver.close(false);
+          Deno.exit(0);
         } catch (err) {
           logWarning("Failed to persist share.");
           console.error(err);
@@ -261,6 +262,7 @@ function registerAddShareCommand(cmd: Cliffy.Command) {
           logSuccess(`Added ${driver.share}`);
 
           await driver.close(false);
+          Deno.exit(0);
         } catch (err) {
           logWarning("Failed to persist share.");
           console.error(err);
@@ -343,6 +345,8 @@ function registerLsShareCommand(cmd: Cliffy.Command) {
             "Docs",
             "Filepath",
           ]).body(rows).border(true).render();
+
+          Deno.exit(0);
         },
       ),
   );
@@ -464,6 +468,7 @@ function registerPathsShareCommand(cmd: Cliffy.Command) {
           }
 
           await replica.close(false);
+          Deno.exit(0);
         },
       ),
   );
@@ -495,6 +500,7 @@ function registerGetLatestShareCommand(cmd: Cliffy.Command) {
 
           logDoc(latestDoc);
           await replica.close(false);
+          Deno.exit(0);
         },
       ),
   );
@@ -527,6 +533,7 @@ function registerContentShareCommand(cmd: Cliffy.Command) {
 
           console.log(latestDoc.content);
           await replica.close(false);
+          Deno.exit(0);
         },
       ),
   );
@@ -808,11 +815,13 @@ function registerRemoveShareCommand(cmd: Cliffy.Command) {
           try {
             await Deno.remove(sharePath);
             logSuccess(`Removed ${address}`);
+            Deno.exit(0);
           } catch (err) {
             logWarning(
               `Something wefnt wrong when trying to remove ${address}`,
             );
             console.error(err);
+            Deno.exit(1);
           }
         },
       ),

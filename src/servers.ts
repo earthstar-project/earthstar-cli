@@ -49,6 +49,8 @@ function registerListServerCommand(cmd: Cliffy.Command) {
           new Cliffy.Table().body(servers.map((server) => [server])).border(
             true,
           ).render();
+
+          Deno.exit(0);
         },
       ),
   );
@@ -65,9 +67,11 @@ function registerAddServerCommand(cmd: Cliffy.Command) {
           try {
             addServer(url);
             logSuccess(`Added ${url} to known replica servers.`);
+            Deno.exit(0);
           } catch (err) {
             console.log(err.message);
             logWarning(`Couldn't add ${url}`);
+            Deno.exit(1);
           }
         },
       ),
@@ -100,6 +104,8 @@ function registerRemoveServerCommand(cmd: Cliffy.Command) {
               `Nothing was removed. Didn't know about ${serverToRemove} to begin with.`,
             );
           }
+
+          Deno.exit(0);
         },
       ),
   );

@@ -23,10 +23,7 @@ to have Deno installed
 
 Once Deno is installed, run the following command in your terminal:
 
-```
-deno install --allow-read --allow-write --allow-net --allow-run --no-check --unstable -f --location https://earthstar-project.org -n earthstar
-https://deno.land/x/earthstar_cli/src/main.ts
-```
+`deno install --allow-read --allow-write --allow-net --allow-run --no-check --unstable -f --location https://earthstar-project.org -n earthstar https://deno.land/x/earthstar_cli/src/main.ts`
 
 There are a few permission flags there. Here is what they are for:
 
