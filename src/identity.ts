@@ -305,11 +305,11 @@ export function registerIdentityCommand(cmd: Cliffy.Command) {
     identityCommand.showHelp();
   });
 
-  registerListIdentityCommand(identityCommand);
-  registerSwitchIdentityCommand(identityCommand);
   registerGenerateIdentityCommand(identityCommand);
   registerAddIdentityCommand(identityCommand);
   registerRemoveIdentityCommand(identityCommand);
+  registerListIdentityCommand(identityCommand);
+  registerSwitchIdentityCommand(identityCommand);
   registerInfoIdentityCommand(identityCommand);
 
   cmd.command(

@@ -639,7 +639,7 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
   cmd.command(
     "sync-files",
     new Cliffy.Command().description(
-      "Sync a share with a filesystem directory.",
+      "Sync a share's contents to the filesystem. This command will search for the closest directory which has been synced before and sync from there, working upwards the file directory tree. If no previously synced directory is found and the current working directory is empty, the current working directory will be synced.",
     )
       .option("--share [type:string]", "Share address", {
         required: false,

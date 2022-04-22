@@ -40,7 +40,7 @@ function registerListServerCommand(cmd: Cliffy.Command) {
   cmd.command(
     "list",
     new Cliffy.Command().description(
-      "Add a URL to the list of known replica servers.",
+      "List known replica servers.",
     )
       .action(
         () => {
