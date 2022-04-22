@@ -9,11 +9,16 @@ export function registerUpgradeCommand(cmd: Cliffy.Command) {
       "Upgrade the Earthstar CLI to the latest version.",
     ).option("--version [type:string]", "The version to install").action(
       async ({ version }: { version: string }) => {
-        const { latest } = await getVersions();
+        const { latest, versions } = await getVersions();
 
-        if (currentVersion === latest) {
+        if (currentVersion === latest && !version) {
           console.log("You have the latest version of the Earthstar CLI.");
           Deno.exit(0);
+        }
+
+        if (version && !versions.includes(version)) {
+          console.log(`The requested version (${version}) was not found.`);
+          Deno.exit(1);
         }
 
         const process = Deno.run({
