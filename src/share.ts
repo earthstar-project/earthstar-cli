@@ -627,6 +627,8 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
           });
 
           try {
+            console.log("Syncing...");
+
             await peer.syncUntilCaughtUp(thingsToSyncWith);
 
             logSuccess("Synced.");
