@@ -3,7 +3,7 @@ import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
 import { logEmphasis, logSuccess, logWarning } from "./util.ts";
-import { getDirAssociatedShare } from "https://deno.land/x/earthstar@v8.3.0/src/sync-fs/util.ts";
+import { getDirAssociatedShare } from "https://deno.land/x/earthstar@v9.3.3/src/sync-fs/util.ts";
 import { getServers } from "./servers.ts";
 import { ensureDir } from "https://deno.land/std@0.132.0/fs/mod.ts";
 
