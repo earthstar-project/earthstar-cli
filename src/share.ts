@@ -1,4 +1,11 @@
-import { Cliffy, distanceToNow, Earthstar } from "../deps.ts";
+import {
+  Cliffy,
+  distanceToNow,
+  Earthstar,
+  formatDuration,
+  intervalToDuration,
+  throttle,
+} from "../deps.ts";
 import { getCurrentIdentity, getIdentities } from "./identity.ts";
 import * as path from "https://deno.land/std@0.131.0/path/mod.ts";
 import home_dir from "https://deno.land/x/dir@v1.2.0/home_dir/mod.ts";
@@ -9,26 +16,15 @@ import { ensureDir } from "https://deno.land/std@0.132.0/fs/mod.ts";
 
 const LS_SHARE_DIR_KEY = "shares_dir";
 
-function openReplica(path: string) {
-  const driver = new Earthstar.ReplicaDriverSqlite({
-    filename: path,
-    mode: "open",
-    share: null,
-  });
+async function openReplica(shareAddress: string) {
+  const sharesDir = await getSharesDir();
+  const shareDir = path.join(sharesDir, shareAddress);
 
   return new Earthstar.Replica(
-    driver.share,
-    Earthstar.FormatValidatorEs4,
-    driver,
+    {
+      driver: new Earthstar.ReplicaDriverFs(shareAddress, shareDir),
+    },
   );
-}
-
-async function openShare(address: string) {
-  const sharesDir = await getSharesDir();
-
-  const sharePath = path.join(sharesDir, `${address}.sqlite`);
-
-  return openReplica(sharePath);
 }
 
 async function setShareDir(message: string) {
@@ -100,9 +96,12 @@ async function getPeer() {
   const peer = new Earthstar.Peer();
 
   for await (const dirEntry of Deno.readDir(sharesDir)) {
-    if (dirEntry.isFile && dirEntry.name.endsWith(".sqlite")) {
+    if (
+      dirEntry.isDirectory &&
+      !Earthstar.isErr(Earthstar.parseShareAddress(dirEntry.name))
+    ) {
       try {
-        const replica = openReplica(path.join(sharesDir, dirEntry.name));
+        const replica = await openReplica(dirEntry.name);
 
         peer.addReplica(replica);
       } catch (err) {
@@ -156,7 +155,7 @@ async function promptPath(replica: Earthstar.Replica, allowNew?: boolean) {
   });
 }
 
-function logDoc(doc: Earthstar.Doc) {
+function logDoc(doc: Earthstar.DocEs5) {
   const docDate = new Date(doc.timestamp / 1000);
 
   const table = new Cliffy.Table();
@@ -164,14 +163,20 @@ function logDoc(doc: Earthstar.Doc) {
   table.body(
     [
       ["Path", doc.path],
-      ["Content", doc.content],
+      ["Text", doc.text],
       ["Author", doc.author],
       [
         "Timestamp",
         `${doc.timestamp} (${distanceToNow(docDate, { addSuffix: true })})`,
       ],
       ["Signature", doc.signature],
-      ["Content hash", doc.contentHash],
+      ["Text hash", doc.textHash],
+      ...(doc.attachmentHash && doc.attachmentSize
+        ? [["Attachment hash", doc.attachmentHash], [
+          "Attachment size",
+          doc.attachmentSize,
+        ]]
+        : []),
       ["Format", doc.format],
     ],
   ).border(true).maxColWidth(50)
@@ -209,19 +214,12 @@ function registerGenerateShareCommand(cmd: Cliffy.Command) {
           Deno.exit(0);
         }
 
-        const dirPath = await getSharesDir();
-        const dbPath = path.join(dirPath, `${result}.sqlite`);
-
         try {
-          const driver = new Earthstar.ReplicaDriverSqlite({
-            filename: dbPath,
-            mode: "create",
-            share: result,
-          });
+          const replica = await openReplica(result);
 
-          logSuccess(`Added ${driver.share}`);
+          logSuccess(`Added ${replica.share}`);
 
-          await driver.close(false);
+          await replica.close(false);
           Deno.exit(0);
         } catch (err) {
           logWarning("Failed to persist share.");
@@ -249,19 +247,12 @@ function registerAddShareCommand(cmd: Cliffy.Command) {
           Deno.exit(1);
         }
 
-        const dirPath = await getSharesDir();
-        const dbPath = path.join(dirPath, `${shareAddress}.sqlite`);
-
         try {
-          const driver = new Earthstar.ReplicaDriverSqlite({
-            filename: dbPath,
-            mode: "create",
-            share: shareAddress,
-          });
+          const replica = await openReplica(shareAddress);
 
-          logSuccess(`Added ${driver.share}`);
+          logSuccess(`Added ${replica.share}`);
 
-          await driver.close(false);
+          await replica.close(false);
           Deno.exit(0);
         } catch (err) {
           logWarning("Failed to persist share.");
@@ -332,7 +323,7 @@ function registerLsShareCommand(cmd: Cliffy.Command) {
                 `${docCount.length}`,
                 path.join(
                   shareDir,
-                  `${parsed.name}.***.sqlite`,
+                  `+${parsed.name}.***`,
                 ),
               ]);
             }
@@ -352,6 +343,7 @@ function registerLsShareCommand(cmd: Cliffy.Command) {
   );
 }
 
+// TODO: Set attachment with path.
 function registerSetShareCommand(cmd: Cliffy.Command) {
   cmd.command(
     "set",
@@ -370,7 +362,7 @@ function registerSetShareCommand(cmd: Cliffy.Command) {
       .option("--path [type:string]", "Document path", {
         required: false,
       })
-      .option("--content [type:string]", "Document content", {
+      .option("--text [type:string]", "Document text", {
         required: false,
       })
       .action(
@@ -415,16 +407,15 @@ function registerSetShareCommand(cmd: Cliffy.Command) {
           }
 
           const address = share || await promptShare();
-          const replica = await openShare(address);
+          const replica = await openReplica(address);
           const pathToUse = path || await promptPath(replica, true);
           const contentToUse = content || await Cliffy.Input.prompt({
             message: "Enter document content",
           });
 
           const res = await replica.set(keypair, {
-            content: contentToUse,
+            text: contentToUse,
             path: pathToUse,
-            format: "es.4",
           });
 
           if (res.kind === "failure") {
@@ -457,7 +448,7 @@ function registerPathsShareCommand(cmd: Cliffy.Command) {
         async ({ share }) => {
           const address = share || await promptShare();
 
-          const replica = await openShare(address);
+          const replica = await openReplica(address);
 
           const latestDocs = await replica.getLatestDocs();
 
@@ -488,7 +479,7 @@ function registerGetLatestShareCommand(cmd: Cliffy.Command) {
       .action(
         async ({ share, path }) => {
           const address = share || await promptShare();
-          const replica = await openShare(address);
+          const replica = await openReplica(address);
           const pathToUse = path || await promptPath(replica);
           const latestDoc = await replica.getLatestDocAtPath(pathToUse);
 
@@ -506,11 +497,11 @@ function registerGetLatestShareCommand(cmd: Cliffy.Command) {
   );
 }
 
-function registerContentShareCommand(cmd: Cliffy.Command) {
+function registerTextShareCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "contents",
+    "text",
     new Cliffy.Command().description(
-      "Get the contents of the latest document at this share's path",
+      "Get the text of the latest document at this share's path",
     )
       .option("--share [type:string]", "Share address", {
         required: false,
@@ -521,7 +512,7 @@ function registerContentShareCommand(cmd: Cliffy.Command) {
       .action(
         async ({ share, path }) => {
           const address = share || await promptShare();
-          const replica = await openShare(address);
+          const replica = await openReplica(address);
           const pathToUse = path || await promptPath(replica);
           const latestDoc = await replica.getLatestDocAtPath(pathToUse);
 
@@ -531,7 +522,7 @@ function registerContentShareCommand(cmd: Cliffy.Command) {
             Deno.exit(1);
           }
 
-          console.log(latestDoc.content);
+          console.log(latestDoc.text);
           await replica.close(false);
           Deno.exit(0);
         },
@@ -543,10 +534,10 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
   cmd.command(
     "sync",
     new Cliffy.Command().description(
-      "Sync this document with a known replica servers or a local Earthstar database..",
+      "Sync this document with a known replica servers or a local Earthstar database.",
     ).option(
       "--dbPath [type:string]",
-      "The path of a Sqlite Earthstar database to sync",
+      "The path of a Earthstar share data directory to sync",
       {
         conflicts: ["serverUrl"],
       },
@@ -570,68 +561,193 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
             Deno.exit(0);
           }
 
-          const thingsToSyncWith: (string | Earthstar.Peer)[] = [];
+          const thingsToSyncWith = new Map<string, string | Earthstar.Peer>();
 
           if (dbPath) {
-            const otherReplica = openReplica(dbPath);
+            const otherReplica = await openReplica(dbPath);
             const otherPeer = new Earthstar.Peer();
             otherPeer.addReplica(otherReplica);
-            thingsToSyncWith.push(otherPeer);
+            thingsToSyncWith.set(dbPath, otherPeer);
           } else if (serverUrl) {
-            thingsToSyncWith.push(serverUrl);
+            thingsToSyncWith.set(serverUrl, serverUrl);
           } else {
-            thingsToSyncWith.push(...servers);
+            for (const server of servers) {
+              thingsToSyncWith.set(server, server);
+            }
           }
-
-          peer.syncerStatuses.bus.on("changed", (_key) => {
-            const rows = [];
-
-            for (
-              const [connection, statuses] of peer.syncerStatuses.entries()
-            ) {
-              rows.push([new Cliffy.Cell(connection).colSpan(3)]);
-              rows.push(["Share", "Pulled", "New"]);
-
-              Object.keys(statuses).forEach((shareAddress) => {
-                const { ingestedCount, pulledCount } = (statuses)[shareAddress];
-
-                const { name } = Earthstar.parseShareAddress(shareAddress);
-
-                rows.push([
-                  `+${name}`,
-                  `${pulledCount}`,
-                  `${ingestedCount}`,
-                ]);
-              });
-            }
-
-            Cliffy.tty.clearTerminal();
-
-            if (dbPath) {
-              console.log(
-                `Syncing with ${dbPath}...`,
-              );
-            } else if (serverUrl) {
-              console.log(
-                `Syncing with ${serverUrl}...`,
-              );
-            } else {
-              console.log(
-                `Syncing with ${thingsToSyncWith.length} peer${
-                  thingsToSyncWith.length > 1 ? "s" : ""
-                }...`,
-              );
-            }
-
-            new Cliffy.Table().border(true).body(rows).render();
-          });
 
           try {
             console.log("Syncing...");
 
-            await peer.syncUntilCaughtUp(thingsToSyncWith);
+            const startTime = new Date();
 
-            logSuccess("Synced.");
+            const syncers = new Map<
+              string,
+              Earthstar.Syncer<unknown, unknown>
+            >();
+
+            for (const [description, target] of thingsToSyncWith) {
+              const syncer = peer.sync(target);
+
+              syncers.set(description, syncer);
+            }
+
+            const syncPromises = [];
+
+            const statuses = new Map<string, Earthstar.SyncerStatus>();
+
+            const updateRender = () => {
+              Cliffy.tty.clearTerminal();
+
+              if (dbPath) {
+                console.log(
+                  `Syncing with ${dbPath}...`,
+                );
+              } else if (serverUrl) {
+                console.log(
+                  `Syncing with ${serverUrl}...`,
+                );
+              } else {
+                console.log(
+                  `Syncing with ${thingsToSyncWith.size} peer${
+                    thingsToSyncWith.size > 1 ? "s" : ""
+                  }...`,
+                );
+              }
+
+              for (
+                const [description, status] of statuses
+              ) {
+                Object.keys(status).forEach((shareAddress) => {
+                  const { docs, attachments } = status[shareAddress];
+
+                  const shareRows = [];
+
+                  const { name } = Earthstar.parseShareAddress(shareAddress);
+                  shareRows.push([
+                    new Cliffy.Cell(`+${name} ↔ ${description}`).colSpan(3)
+                      .align("center"),
+                  ]);
+
+                  const activeAttachments = attachments.filter((attachment) =>
+                    attachment.status !== "missing_attachment"
+                  );
+                  const isAlreadySynced = docs.requested === 0 &&
+                    activeAttachments.length === 0;
+
+                  if (isAlreadySynced) {
+                    shareRows.push([
+                      new Cliffy.Cell("Already in sync.")
+                        .colSpan(3),
+                    ]);
+
+                    new Cliffy.Table().border(true).body(shareRows).minColWidth(
+                      20,
+                    )
+                      .maxColWidth(50)
+                      .render();
+                    return;
+                  }
+
+                  if (docs.requested === 0) {
+                    shareRows.push([
+                      new Cliffy.Cell("Documents already synced.")
+                        .colSpan(3),
+                    ]);
+                  } else {
+                    shareRows.push([new Cliffy.Cell("Documents").colSpan(3)]);
+                    shareRows.push([
+                      new Cliffy.Cell("Received").colSpan(2),
+                      new Cliffy.Cell(`${docs.received} / ${docs.received}`)
+                        .colSpan(1).align("right"),
+                    ]);
+                  }
+
+                  if (attachments.length > 0) {
+                    shareRows.push([new Cliffy.Cell("Attachments").colSpan(3)]);
+                  }
+
+                  for (const attachmentReport of activeAttachments) {
+                    const row = [new Cliffy.Cell(
+                      `${
+                        attachmentReport.kind === "download" ? "⬇" : "⬆"
+                      } ${attachmentReport.path}`,
+                    ).colSpan(2)];
+
+                    let content: string;
+
+                    switch (attachmentReport.status) {
+                      case "failed":
+                        content = "Failed";
+                        break;
+                      case "ready":
+                        content = "Waiting";
+                        break;
+                      case "missing_attachment":
+                        content = "Other peer does not have this";
+                        break;
+                      default:
+                        content = `${
+                          formatBytes(attachmentReport.bytesLoaded, 1)
+                        } / ${formatBytes(attachmentReport.totalBytes, 1)}`;
+                        break;
+                    }
+
+                    row.push(
+                      new Cliffy.Cell(content).colSpan(1).align("right"),
+                    );
+
+                    shareRows.push(row);
+                  }
+
+                  new Cliffy.Table().border(true).body(shareRows).minColWidth(
+                    20,
+                  )
+                    .maxColWidth(50)
+                    .render();
+                });
+              }
+            };
+
+            for (const [description, syncer] of syncers) {
+              syncPromises.push(syncer.isDone());
+
+              const throttledUpdate = throttle(
+                (status: any) => {
+                  console.log(status);
+
+                  statuses.set(description, status);
+
+                  // Call render.
+                  updateRender();
+                },
+                17,
+              );
+
+              syncer.onStatusChange((status) => {
+                // Update some object of statuses.
+                throttledUpdate(status);
+              });
+            }
+
+            await Promise.all(syncPromises);
+
+            const endTime = new Date();
+
+            const duration = intervalToDuration({
+              start: startTime,
+              end: endTime,
+            });
+
+            const formatted = formatDuration(duration);
+
+            logSuccess(
+              `Synced in ${
+                formatted === ""
+                  ? `${endTime.getTime() - startTime.getTime()}ms`
+                  : formatted
+              }`,
+            );
 
             Deno.exit(0);
           } catch (err) {
@@ -757,7 +873,7 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
           const associatedShare = await getDirAssociatedShare(dirToSyncWith);
 
           const address = associatedShare || share || await promptShare();
-          const replica = await openShare(address);
+          const replica = await openReplica(address);
 
           const { name } = Earthstar.parseShareAddress(replica.share);
 
@@ -804,7 +920,7 @@ function registerRemoveShareCommand(cmd: Cliffy.Command) {
         async ({ share }) => {
           const address = share || await promptShare();
           const sharesDir = await getSharesDir();
-          const sharePath = path.join(sharesDir, `${address}.sqlite`);
+          const sharePath = path.join(sharesDir, `${address}`);
 
           const isSure = await Cliffy.Confirm.prompt(
             `The local replica of ${address} will be erased and forgotten. Are you sure you want to do this?`,
@@ -815,7 +931,7 @@ function registerRemoveShareCommand(cmd: Cliffy.Command) {
           }
 
           try {
-            await Deno.remove(sharePath);
+            await Deno.remove(sharePath, { recursive: true });
             logSuccess(`Removed ${address}`);
             Deno.exit(0);
           } catch (err) {
@@ -844,7 +960,7 @@ export function registerShareCommands(cmd: Cliffy.Command) {
   registerSetShareCommand(shareCommand);
   registerPathsShareCommand(shareCommand);
   registerGetLatestShareCommand(shareCommand);
-  registerContentShareCommand(shareCommand);
+  registerTextShareCommand(shareCommand);
   registerSyncShareCommand(shareCommand);
   registerChangeDirShareCommand(shareCommand);
   registerFsSyncShareCommand(shareCommand);
@@ -853,4 +969,13 @@ export function registerShareCommands(cmd: Cliffy.Command) {
     "shares",
     shareCommand,
   );
+}
+
+function formatBytes(bytes: number, decimals: number) {
+  if (bytes == 0) return "0 Bytes";
+  const k = 1024,
+    dm = decimals || 2,
+    sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"],
+    i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
