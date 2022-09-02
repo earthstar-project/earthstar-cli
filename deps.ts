@@ -1,4 +1,4 @@
-export * as Earthstar from "../earthstar/mod.ts";
+export * as Earthstar from "https://raw.githubusercontent.com/earthstar-project/earthstar/syncer-wrangle/mod.ts";
 export * as Cliffy from "https://deno.land/x/cliffy@v0.22.2/mod.ts";
 export { keypress } from "https://deno.land/x/cliffy@v0.22.2/keypress/mod.ts";
 export { default as distanceToNow } from "https://deno.land/x/date_fns@v2.9.0/formatDistanceToNow/index.js";
