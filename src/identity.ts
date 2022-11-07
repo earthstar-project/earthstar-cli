@@ -85,8 +85,9 @@ function registerListIdentityCommand(cmd: Cliffy.Command) {
 
 function registerGenerateIdentityCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "generate <shortname>",
+    "generate",
     new Cliffy.Command()
+      .arguments("<shortname>")
       .description("Generate a new identity")
       .option("-a, --add [type:boolean]", "Add to saved identities", {
         default: true,
@@ -97,8 +98,8 @@ function registerGenerateIdentityCommand(cmd: Cliffy.Command) {
       })
       .action(
         async (
-          { add, current }: { add: boolean; current: boolean },
-          name: string,
+          { add, current },
+          name,
         ) => {
           const result = await Earthstar.Crypto.generateAuthorKeypair(name);
 
@@ -161,8 +162,9 @@ function registerSwitchIdentityCommand(cmd: Cliffy.Command) {
 
 function registerAddIdentityCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "add <address> <secret>",
+    "add",
     new Cliffy.Command()
+      .arguments("<address> <secret>")
       .description("Add an existing identity")
       .option("-c, --current [type:boolean]", "Set as current identity", {
         default: false,
@@ -200,7 +202,7 @@ function registerRemoveIdentityCommand(cmd: Cliffy.Command) {
     "remove",
     new Cliffy.Command()
       .description("Remove a known identity")
-      .option("--idAddress [type:string]", "The address to remove", {
+      .option("--idAddress <idAddress:string>", "The address to remove", {
         required: false,
       })
       .action(async ({ idAddress }) => {
@@ -243,11 +245,15 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
     "info",
     new Cliffy.Command().description(
       "Show a stored identity's full address and secret",
-    ).option("--idAddress [type:string]", "The address to show info for.", {
-      required: false,
-    })
+    ).option(
+      "--idAddress <idAddress:string>",
+      "The address to show info for.",
+      {
+        required: false,
+      },
+    )
       .option(
-        "--current [type:boolean]",
+        "--current [current:boolean]",
         "Use the currently selected identity",
         {
           required: false,
@@ -255,14 +261,14 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
         },
       )
       .option(
-        "--onlyAddress [type:boolean]",
+        "--onlyAddress [onlyAddress:boolean]",
         "Only output the identity's address.",
         {
           required: false,
           conflicts: ["onlySecret"],
         },
       ).option(
-        "--onlySecret [type:boolean]",
+        "--onlySecret [onlySecret:boolean]",
         "Only output the identity's secret.",
         {
           required: false,
@@ -276,9 +282,9 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
           Deno.exit(0);
         }
 
-        const address = current
-          ? getCurrentIdentity()
-          : null || idAddress || await Cliffy.Select.prompt({
+        const address = (current &&
+          getCurrentIdentity()) ||
+          idAddress || await Cliffy.Select.prompt({
             message: "Choose which identity to show info for",
             options: Object.keys(identities),
           });
@@ -295,7 +301,10 @@ function registerInfoIdentityCommand(cmd: Cliffy.Command) {
         } else if (onlySecret) {
           console.log(secret);
         } else {
-          new Cliffy.Table().body([["Address", address], ["Secret", secret]])
+          new Cliffy.Table().body([["Address", address], [
+            "Secret",
+            secret,
+          ]])
             .border(true).render();
         }
 
