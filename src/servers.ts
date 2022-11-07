@@ -58,12 +58,14 @@ function registerListServerCommand(cmd: Cliffy.Command) {
 
 function registerAddServerCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "add <url>",
-    new Cliffy.Command().description(
-      "Add a URL to the list of known replica servers.",
-    )
+    "add",
+    new Cliffy.Command()
+      .arguments("<url>")
+      .description(
+        "Add a URL to the list of known replica servers.",
+      )
       .action(
-        (_flags, url: string) => {
+        (_flags, url) => {
           try {
             addServer(url);
             logSuccess(`Added ${url} to known replica servers.`);
@@ -83,7 +85,7 @@ function registerRemoveServerCommand(cmd: Cliffy.Command) {
     "remove",
     new Cliffy.Command().description(
       "Remove a known replica server.",
-    ).option("--server [type:string]", "Replica server URL", {
+    ).option("--server <server:string>", "Replica server URL", {
       required: false,
     })
       .action(

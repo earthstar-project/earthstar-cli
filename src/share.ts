@@ -180,96 +180,102 @@ function logDoc(doc: Earthstar.Doc) {
 
 function registerGenerateShareCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "generate <name>",
-    new Cliffy.Command().description(
-      "Generate a new share address using a human readable name.",
-    ).option(
-      "-a, --add [type:boolean]",
-      "Add to saved shares",
-      {
-        default: true,
-      },
-    ).action(
-      async (
-        { add },
-        name: string,
-      ) => {
-        const result = Earthstar.generateShareAddress(name);
+    "generate",
+    new Cliffy.Command()
+      .arguments("<name>")
+      .description(
+        "Generate a new share address using a human readable name.",
+      ).option(
+        "-a, --add [type:boolean]",
+        "Add to saved shares",
+        {
+          default: true,
+        },
+      ).action(
+        async (
+          { add },
+          name: string,
+        ) => {
+          const result = Earthstar.generateShareAddress(name);
 
-        if (Earthstar.isErr(result)) {
-          logWarning("Could not generate share address.");
-          console.error(result);
-          Deno.exit(1);
-        }
+          if (Earthstar.isErr(result)) {
+            logWarning("Could not generate share address.");
+            console.error(result);
+            Deno.exit(1);
+          }
 
-        logSuccess("Generated share address.");
+          logSuccess("Generated share address.");
 
-        if (!add) {
-          console.log(result);
-          Deno.exit(0);
-        }
+          if (!add) {
+            console.log(result);
+            Deno.exit(0);
+          }
 
-        const dirPath = await getSharesDir();
-        const dbPath = path.join(dirPath, `${result}.sqlite`);
+          const dirPath = await getSharesDir();
+          const dbPath = path.join(dirPath, `${result}.sqlite`);
 
-        try {
-          const driver = new Earthstar.ReplicaDriverSqlite({
-            filename: dbPath,
-            mode: "create",
-            share: result,
-          });
+          try {
+            const driver = new Earthstar.ReplicaDriverSqlite({
+              filename: dbPath,
+              mode: "create",
+              share: result,
+            });
 
-          logSuccess(`Added ${driver.share}`);
+            logSuccess(`Added ${driver.share}`);
 
-          await driver.close(false);
-          Deno.exit(0);
-        } catch (err) {
-          logWarning("Failed to persist share.");
-          console.error(err);
-          Deno.exit(1);
-        }
-      },
-    ),
+            await driver.close(false);
+            Deno.exit(0);
+          } catch (err) {
+            logWarning("Failed to persist share.");
+            console.error(err);
+            Deno.exit(1);
+          }
+        },
+      ),
   );
 }
 
 function registerAddShareCommand(cmd: Cliffy.Command) {
   cmd.command(
-    "add <shareAddress>",
-    new Cliffy.Command().description("Add a share by address.").action(
-      async (
-        _flags,
-        shareAddress: string,
-      ) => {
-        const addressIsValidResult = Earthstar.checkShareIsValid(shareAddress);
+    "add",
+    new Cliffy.Command()
+      .arguments("<shareAddress>")
+      .description("Add a share by address.").action(
+        async (
+          _flags,
+          shareAddress: string,
+        ) => {
+          const addressIsValidResult = Earthstar.checkShareIsValid(
+            shareAddress,
+          );
 
-        if (Earthstar.isErr(addressIsValidResult)) {
-          logWarning(`Could not add ${shareAddress}`);
-          console.error(`${addressIsValidResult}`);
-          Deno.exit(1);
-        }
+          if (Earthstar.isErr(addressIsValidResult)) {
+            logWarning(`Could not add ${shareAddress}`);
+            console.error(`${addressIsValidResult}`);
+            Deno.exit(1);
+          }
 
-        const dirPath = await getSharesDir();
-        const dbPath = path.join(dirPath, `${shareAddress}.sqlite`);
+          const dirPath = await getSharesDir();
+          const dbPath = path.join(dirPath, `${shareAddress}.sqlite`);
 
-        try {
-          const driver = new Earthstar.ReplicaDriverSqlite({
-            filename: dbPath,
-            mode: "create",
-            share: shareAddress,
-          });
+          try {
+            const driver = new Earthstar.ReplicaDriverSqlite({
+              filename: dbPath,
+              mode: "create",
+              share: shareAddress,
+            });
 
-          logSuccess(`Added ${driver.share}`);
+            logSuccess(`Added ${driver.share}`);
 
-          await driver.close(false);
-          Deno.exit(0);
-        } catch (err) {
-          logWarning("Failed to persist share.");
-          console.error(err);
-          Deno.exit(1);
-        }
-      },
-    ),
+            await driver.close(false);
+            Deno.exit(0);
+          } catch (err) {
+            logWarning("Failed to persist share.");
+            console.error(err);
+            Deno.exit(1);
+          }
+        },
+      ),
   );
 }
 
@@ -356,21 +362,21 @@ function registerSetShareCommand(cmd: Cliffy.Command) {
   cmd.command(
     "set",
     new Cliffy.Command().description("Set a document's contents.")
-      .option("--idAddress [type:string]", "Identity address to use", {
+      .option("--idAddress <idAddress:string>", "Identity address to use", {
         depends: ["idSecret"],
         required: false,
       })
-      .option("--idSecret [type:string]", "Identity secret to use", {
+      .option("--idSecret <idSecret:string>", "Identity secret to use", {
         depends: ["idAddress"],
         required: false,
       })
-      .option("--share [type:string]", "Share address", {
+      .option("--share <share:string>", "Share address", {
         required: false,
       })
-      .option("--path [type:string]", "Document path", {
+      .option("--path <path:string>", "Document path", {
         required: false,
       })
-      .option("--content [type:string]", "Document content", {
+      .option("--content <content:string>", "Document content", {
         required: false,
       })
       .action(
@@ -450,7 +456,7 @@ function registerPathsShareCommand(cmd: Cliffy.Command) {
   cmd.command(
     "paths",
     new Cliffy.Command().description("Get the paths of this share's documents.")
-      .option("--share [type:string]", "Share address", {
+      .option("--share <share:string>", "Share address", {
         required: false,
       })
       .action(
@@ -479,10 +485,10 @@ function registerGetLatestShareCommand(cmd: Cliffy.Command) {
     "latest",
     new Cliffy.Command().description(
       "Get the latest document at a share's path.",
-    ).option("--share [type:string]", "Share address", {
+    ).option("--share <share:string>", "Share address", {
       required: false,
     })
-      .option("--path [type:string]", "Document path", {
+      .option("--path <path:string>", "Document path", {
         required: false,
       })
       .action(
@@ -512,10 +518,10 @@ function registerContentShareCommand(cmd: Cliffy.Command) {
     new Cliffy.Command().description(
       "Get the contents of the latest document at this share's path",
     )
-      .option("--share [type:string]", "Share address", {
+      .option("--share <share:string>", "Share address", {
         required: false,
       })
-      .option("--path [type:string]", "Document path", {
+      .option("--path <path:string>", "Document path", {
         required: false,
       })
       .action(
@@ -545,13 +551,13 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
     new Cliffy.Command().description(
       "Sync this document with a known replica servers or a local Earthstar database..",
     ).option(
-      "--dbPath [type:string]",
+      "--dbPath <dbPath:string>",
       "The path of a Sqlite Earthstar database to sync",
       {
         conflicts: ["serverUrl"],
       },
     ).option(
-      "--serverUrl [type:string]",
+      "--serverUrl <serverUrl:string>",
       "The path of a Sqlite Earthstar database to sync",
       {
         conflicts: ["dbPath"],
@@ -559,7 +565,7 @@ function registerSyncShareCommand(cmd: Cliffy.Command) {
     )
       .action(
         async (
-          { dbPath, serverUrl }: { dbPath: string; serverUrl: string },
+          { dbPath, serverUrl },
         ) => {
           const peer = await getPeer();
 
@@ -650,20 +656,20 @@ function registerFsSyncShareCommand(cmd: Cliffy.Command) {
     new Cliffy.Command().description(
       "Sync a share's contents to the filesystem. This command will search for the closest directory which has been synced before and sync from there, working upwards the file directory tree. If no previously synced directory is found and the current working directory is empty, the current working directory will be synced.",
     )
-      .option("--share [type:string]", "Share address", {
+      .option("--share <share:string>", "Share address", {
         required: false,
       })
       .option(
-        "--dirPath [type:string]",
+        "--dirPath <dirPath:string>",
         "The path of the directory to sync with",
         {
           required: false,
         },
-      ).option("--idAddress [type:string]", "Identity address to use", {
+      ).option("--idAddress <idAddress:string>", "Identity address to use", {
         depends: ["idSecret"],
         required: false,
       })
-      .option("--idSecret [type:string]", "Identity secret to use", {
+      .option("--idSecret <idSecret:string>", "Identity secret to use", {
         depends: ["idAddress"],
         required: false,
       })

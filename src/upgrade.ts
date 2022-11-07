@@ -7,8 +7,8 @@ export function registerUpgradeCommand(cmd: Cliffy.Command) {
     "upgrade",
     new Cliffy.Command().description(
       "Upgrade the Earthstar CLI to the latest version.",
-    ).option("--version [type:string]", "The version to install").action(
-      async ({ version }: { version: string }) => {
+    ).option("--version <version:string>", "The version to install").action(
+      async ({ version }) => {
         const { latest, versions } = await getVersions();
 
         if (currentVersion === latest && !version) {
