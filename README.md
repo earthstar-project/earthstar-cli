@@ -1,5 +1,9 @@
 # Earthstar CLI
 
+> ### **🚨🚨🚨 The Earthstar CLI is not under active development**! Please check out [user-scripts](https://github.com/earthstar-project/user_scripts) instead, which offers pretty much all of the same functionality as the CLI, but with the benefit that you can extend functionality with your own scripts, and tweak existing ones. 
+
+---
+
 A complete command-line suite for everything Earthstar. Manage identities, back
 up shares on your computer, and sync with replica servers over the internet.
 
